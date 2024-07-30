@@ -39,16 +39,13 @@ benchmarks/      contains crafted and cryptographic instances which were
 
 ## REQUIRED PACKAGES
 
-python3.6, g++ (version 5+), build-essential, git, unzip, zlib
+python3 (version 3.6+), g++ (version 5+), build-essential, git, unzip, zlib
 
-> sudo apt-get install g++ build-essential git unzip python3.6 zlibc zlib1g zlib1g-dev
-
-To install python3.6 on old Ubuntu versions (e.g., 14.04 or 16.04), please follow the instructions from this quide
-https://askubuntu.com/questions/865554/how-do-i-install-python-3-6-using-apt-get
+> sudo apt-get install g++ build-essential git unzip python3 zlibc zlib1g zlib1g-dev
 
 ## HOW TO BUILD
 
-> git clone --recurse-submodules https://github.com/Nauchnik/alias.git
+> git clone --recurse-submodules https://github.com/olegzaikin/alias.git
 
 > cd alias
 
@@ -56,7 +53,7 @@ https://askubuntu.com/questions/865554/how-do-i-install-python-3-6-using-apt-get
 
 make command builds binaries for every IPASIR-compatible SAT solver from 
 alias/ipasir/sat/. By default, this folder contains sources only for 
-the picosat solver. In order to build any other IPASIR-compatable solver, 
+the picosat solver. In order to build any other IPASIR-compatible solver, 
 one needs to copy its sources into the mentioned folder. Solvers from the SAT 
 Competition 2017 Incremental track
 
@@ -75,7 +72,7 @@ For instance, to build IPASIR-based glucose4, one should:
 
 - > make
 
-## HOW TO LAUNCH
+## HOW TO RUN
 
 > cd ./bin/
 
