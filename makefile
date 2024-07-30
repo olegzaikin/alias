@@ -7,6 +7,7 @@ all:
 	chmod +x ./ipasir/scripts/mkall.sh; chmod +x ./ipasir/scripts/mkone.sh; chmod +x ./ipasir/scripts/mkcln.sh; 
 	rm -rf ./ipasir/app/*
 	cp -rf ./genipainterval ./ipasir/app/
+	rm -rf ./ipasir/sat/minisat220/
 	cp -rf ./ipasir_solvers/* ./ipasir/sat/
 	rm -rf ./ipasir_solvers/
 	cd ipasir; make all; cp -rf ./bin/genipainterval* ../bin/
