@@ -16,6 +16,7 @@
 #include <cmath>
 #include <random>
 #include <unordered_map>
+#include <cassert>
 #include "point.h"
 
 const double DEFAULT_TIME_LIMIT = 3600;
@@ -41,7 +42,7 @@ public:
 	double timeFromStart();
 	bool isTimeExceeded();
 
-	void parseParams(const int argc, char *argv[]);
+	void parseParams(vector<string> str_argv);
 	void init();
 	void loadVars();
 	void loadBackdoor();

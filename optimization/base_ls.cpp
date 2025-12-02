@@ -361,10 +361,10 @@ bool strPrefix(const string init_str, const string prefix, string &res_str)
 	return false;
 }
 
-void base_local_search::parseParams(const int argc, char *argv[])
+void base_local_search::parseParams(vector<string> str_argv)
 {
-	for (int i = 1; i < argc; i++) {
-		string par_str = argv[i];
+	assert(not str_argv.empty());
+	for (auto &par_str : str_argv) {
 		string res_str;
 		if (strPrefix(par_str, "-pcs=", res_str))
 			pcs_name = res_str;

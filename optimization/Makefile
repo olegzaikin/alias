@@ -1,11 +1,11 @@
 CPP = g++
 CPPFLAGS = -O3 -std=c++0x
 
-igbfs: base_ls.o igbfs.o alias_ls.o
-	${CPP} ${CPPFLAGS} base_ls.o igbfs.o alias_ls.o -o alias_ls
+igbfs: base_ls.o igbfs.o alias.o
+	${CPP} ${CPPFLAGS} base_ls.o igbfs.o alias.o -o alias
 
-alias_ls.o: alias_ls.cpp
-	${CPP} ${CPPFLAGS} alias_ls.cpp -c
+alias.o: alias.cpp
+	${CPP} ${CPPFLAGS} alias.cpp -c
 
 igbfs.o: igbfs.cpp
 	${CPP} ${CPPFLAGS} igbfs.cpp -c
