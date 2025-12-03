@@ -46,21 +46,21 @@ public:
 	void init();
 	void loadVars();
 	void loadBackdoor();
-	point pointFromUintVec(vector<unsigned> var_vec);
-	vector<unsigned> uintVecFromPoint(point p);
+	Point pointFromUintVec(vector<unsigned> var_vec);
+	vector<unsigned> uintVecFromPoint(Point p);
 	void coutUintVec(vector<unsigned> vec);
 	void coutBoolVec(vector<bool> vec);
-	vector<var> getAllCnfVars(const string filename);
-	vector<var> readVarsFromPcs(string pcs_name);
+	vector<Var> getAllCnfVars(const string filename);
+	vector<Var> readVarsFromPcs(string pcs_name);
 	bool isEstTooLong();
 	void writeToGraphFile(const string str);
 	void setGraphFileName();
 	bool solveInstance();
 	void reportResult();
-	void calculateEstimation(point &cur_point, bool use_memory = true);
-	bool isChecked(point p);
+	void calculateEstimation(Point &cur_point, bool use_memory = true);
+	bool isChecked(Point p);
 	void clearInterruptedChecked();
-	string getScriptCommand(const int mode, const point cur_point);
+	string getScriptCommand(const int mode, const Point cur_point);
 	bool isKnownBackdoor();
 	int getVarPos(const unsigned val);
 	void printGlobalRecordPoint();
@@ -70,24 +70,23 @@ public:
 	int total_skipped_func_calculations;
 
 protected:
-	vector<var> vars;
+	vector<Var> vars;
 	bool are_vars_in_row;
 	unordered_map<string, double> checked_points;
 	unsigned skipped_points_count;
 	unsigned interrupted_points_count;
-	point global_record_point;
-	point local_record_point;
+	Point global_record_point;
+	Point local_record_point;
 	string cnf_name;
 	string pcs_name;
 	string graph_file_name;
 	fstream graph_file;
-	string alias_script_name;
 	string solver_name;
 	int cpu_cores;
 	double cpu_lim;
 	double wall_time_solving;
 	int verbosity;
-	point before_jump_point;
+	Point before_jump_point;
 	bool is_random_search;
 	unsigned vars_decr_times;
 	chrono::high_resolution_clock::time_point start_t;
@@ -95,7 +94,7 @@ protected:
 	string result_output_name;
 	string script_out_str;
 	string backdoor_file_name;
-	point known_backdoor;
+	Point known_backdoor;
 	random_device rd;
 	// iteretedHCVJ parameters
 	unsigned jump_lim;
@@ -105,5 +104,3 @@ protected:
 };
 
 #endif
-
-

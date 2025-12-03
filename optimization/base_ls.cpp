@@ -1,11 +1,11 @@
 #include "base_ls.h"
+#include "sat_solver.h"
 #include <sstream>
 
 base_local_search::base_local_search() :
 	graph_file_name(""),
 	cnf_name(""),
 	solver_name(""),
-	alias_script_name("ALIAS.py"),
 	pcs_name(""),
 	cpu_cores(1),
 	cpu_lim(DEFAULT_TIME_LIMIT),
@@ -88,9 +88,9 @@ int base_local_search::getVarPos(const unsigned val)
 	return pos;
 }
 
-point base_local_search::pointFromUintVec(vector<unsigned> var_vec)
+Point base_local_search::pointFromUintVec(vector<unsigned> var_vec)
 {
-	point p;
+	Point p;
 	p.value.resize(vars.size());
 	for (auto x : p.value)
 		x = false;
@@ -101,7 +101,7 @@ point base_local_search::pointFromUintVec(vector<unsigned> var_vec)
 	return p;
 }
 
-vector<unsigned> base_local_search::uintVecFromPoint(point p)
+vector<unsigned> base_local_search::uintVecFromPoint(Point p)
 {
 	vector<unsigned> vec;
 	for (unsigned i = 0; i < p.value.size(); i++)
@@ -151,7 +151,7 @@ void base_local_search::loadBackdoor()
 
 // Parse a dimacs CNF formula from a given file and
 // save its clauses into a given vector.
-vector<var> base_local_search::getAllCnfVars(const string filename)
+vector<Var> base_local_search::getAllCnfVars(const string filename)
 {
 	int vars_count = 0;
 	ifstream ifile(filename.c_str());
@@ -180,8 +180,8 @@ vector<var> base_local_search::getAllCnfVars(const string filename)
 
 	ifile.close();
 
-	vector<var> vars_vec;
-	var tmp_var;
+	vector<Var> vars_vec;
+	Var tmp_var;
 	for (int i = 0; i < vars_count; i++) {
 		tmp_var.value = i + 1;
 		tmp_var.calculations = 0;
@@ -194,7 +194,7 @@ vector<var> base_local_search::getAllCnfVars(const string filename)
 	return vars_vec;
 }
 
-vector<var> base_local_search::readVarsFromPcs(string pcs_name)
+vector<Var> base_local_search::readVarsFromPcs(const string pcs_name)
 {
 	ifstream pcs_file(pcs_name);
 	if (!pcs_file.is_open()) {
@@ -203,8 +203,8 @@ vector<var> base_local_search::readVarsFromPcs(string pcs_name)
 	}
 
 	string str;
-	vector<var> vars_vec;
-	var tmp_var;
+	vector<Var> vars_vec;
+	Var tmp_var;
 	while (getline(pcs_file, str)) {
 		if (str.size() <= 2)
 			continue;
@@ -339,7 +339,6 @@ void base_local_search::reportResult()
 	sstream << "Estimation for 1 CPU core : " << global_record_point.estimation << " seconds" << endl;
 	sstream << "Estimation for " << cpu_cores << " CPU cores : " << global_record_point.estimation / cpu_cores << " seconds" << endl;
 	if (is_solve) {
-		sstream << alias_script_name << " output on the found backdoor : " << endl;
 		sstream << script_out_str << endl;
 	}
 	cout << sstream.str();
@@ -363,14 +362,13 @@ bool strPrefix(const string init_str, const string prefix, string &res_str)
 
 void base_local_search::parseParams(vector<string> str_argv)
 {
-	assert(not str_argv.empty());
+	assert(str_argv.size() >= 4);
+	cnf_name = str_argv[1];
+	pcs_name = str_argv[2];
+	solver_name = str_argv[3];
 	for (auto &par_str : str_argv) {
 		string res_str;
-		if (strPrefix(par_str, "-pcs=", res_str))
-			pcs_name = res_str;
-		else if (strPrefix(par_str, "-script=", res_str))
-			alias_script_name = res_str;
-		else if (strPrefix(par_str, "-solver=", res_str))
+		if (strPrefix(par_str, "-solver=", res_str))
 			solver_name = res_str;
 		else if (strPrefix(par_str, "-opt-alg=", res_str))
 			istringstream(res_str) >> opt_alg;
@@ -382,27 +380,26 @@ void base_local_search::parseParams(vector<string> str_argv)
 			istringstream(res_str) >> backdoor_file_name;
 		else if (par_str == "--solve")
 			is_solve = true;
-		else if (cnf_name == "")
-			cnf_name = par_str;
-		else if (result_output_name == "")
-			result_output_name = par_str;
 	}
 	
 	cout << "cnf name " << cnf_name << endl;
-	cout << "pcs name " << pcs_name << endl;
+	cout << "start decomposition set name " << pcs_name << endl;
 	cout << "solver name " << solver_name << endl;
-	cout << "alias script name " << alias_script_name << endl;
 	cout << "opt_alg " << opt_alg << endl;
 	cout << "cpu lim " << cpu_lim << endl;
 	cout << "is solve " << is_solve << endl;
 	cout << "verbosity " << verbosity << endl;
-	cout << "result_output_name " << result_output_name << endl;
-	cout << "backdoor_file_name " << backdoor_file_name << endl;
-	
-	if (cnf_name == "") {
-		cerr << "cnf name is empty" << endl;
-		exit(-1);
+	cout << "backdoor name " << backdoor_file_name << endl;
+
+	string base_cnf_name = cnf_name;
+	size_t pos = cnf_name.find_last_of("/");
+	if (pos != string::npos) {
+		base_cnf_name = cnf_name.substr(pos+1, cnf_name.size() - pos - 1);
 	}
+	result_output_name = "out_" + base_cnf_name;
+	cout << "result_output_name : " << result_output_name << endl; 
+	
+	assert(cnf_name != "");
 }
 
 void base_local_search::init()
@@ -428,9 +425,10 @@ void base_local_search::clearInterruptedChecked()
 	cout << checked_points.size() << " points after\n";
 }
 
-void base_local_search::calculateEstimation(point &cur_point, bool use_memory)
+void base_local_search::calculateEstimation(Point &cur_point, bool use_memory)
 {
 	string str = "";
+	// If a point has been already checked, take the estimatation from the map:
 	if (use_memory) {
 		// don't use isChecked since an iterator is required here
 		for (auto x : cur_point.value)
@@ -443,25 +441,13 @@ void base_local_search::calculateEstimation(point &cur_point, bool use_memory)
 		}
 	}
 	
-	// calculate function's value
-	string command_str = getScriptCommand(ESTIMATE, cur_point);
-	if (verbosity > 1)
-		cout << "command_str " << command_str << endl;
+	SatSolver solver(solver_name);
+	cur_point.estimation = solver.estimate(cnf_name, cur_point.value);
 
-	string out_str = getCmdOutput(command_str.c_str());
-	string bef_str = "SUCCESS, 0, 0, ";
-	size_t pos1 = out_str.find(bef_str);
-	if (pos1 != string::npos) {
-		size_t pos2 = pos1 + bef_str.size();
-		out_str = out_str.substr(pos2, out_str.size() - pos2);
-		if (verbosity > 1)
-			cout << "output : " << out_str << endl;
-		stringstream sstream;
-		sstream << out_str;
-		sstream >> cur_point.estimation;
-	}
-	if (use_memory)
+	// Save the point if memory is being used:
+	if (use_memory) {
 		checked_points.insert(pair<string, double>(str, cur_point.estimation));
+	}
 	if ((!is_jump_mode) && (!is_random_search)) {
 		for (unsigned j = 0; j < cur_point.value.size(); j++)
 			if (cur_point.value[j])
@@ -470,7 +456,7 @@ void base_local_search::calculateEstimation(point &cur_point, bool use_memory)
 	total_func_calculations++;
 }
 
-bool base_local_search::isChecked(point p)
+bool base_local_search::isChecked(Point p)
 {
 	string str = "";
 	for (auto x : p.value)
@@ -480,6 +466,7 @@ bool base_local_search::isChecked(point p)
 	return false;
 }
 
+/*
 bool base_local_search::solveInstance()
 {
 	if (isTimeExceeded() || (!is_solve))
@@ -511,49 +498,11 @@ bool base_local_search::solveInstance()
 	if (verbosity > 1)
 		cout << "command_str : " << command_str << endl;
 	script_out_str = getCmdOutput(command_str.c_str());
-	cout << endl << alias_script_name << " output on the found backdoor : " << endl;
 	cout << script_out_str << endl;
 	
 	return true;
 }
-
-string base_local_search::getScriptCommand(const int mode, const point cur_point)
-{
-	stringstream sstream;
-	string command_str = "python3 " + alias_script_name;
-	if (mode == SOLVE) {
-		sstream << wall_time_solving;
-		command_str += " -s -wtlimitsolve " + sstream.str();
-		sstream.str(""); sstream.clear();
-	}
-	else {
-		command_str += " -e";
-		if (time_limit_per_task > 0) {
-			sstream << time_limit_per_task;
-			command_str += " -maxtlpertask " + sstream.str();
-			sstream.str(""); sstream.clear();
-		}
-	}
-	
-	sstream << cpu_cores;
-	command_str += " -number_of_processes " + sstream.str();
-	sstream.str(""); sstream.clear();
-	command_str += " -cnf " + cnf_name + " -solver " + solver_name;
-
-	if (!is_jump_mode) {
-		sstream << local_record_point.estimation * 1.1;
-		command_str += " -bkv " + sstream.str();
-		sstream.str(""); sstream.clear();
-	}
-
-	for (unsigned i = 0; i < vars.size(); i++) {
-		sstream << vars[i].value;
-		command_str += " -v" + sstream.str() + " '" + (cur_point.value[i] == true ? '1' : '0') + "'";
-		sstream.str(""); sstream.clear();
-	}
-
-	return command_str;
-}
+*/
 
 void base_local_search::printGlobalRecordPoint()
 {

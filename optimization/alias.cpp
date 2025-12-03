@@ -16,7 +16,7 @@
 void writeUsage();
 void printVersion();
 
-string version = "1.0.1";
+string version = "1.0.2";
 
 int main(int argc, char *argv[])
 {
@@ -29,7 +29,7 @@ int main(int argc, char *argv[])
 		exit(EXIT_SUCCESS);
 	}
 	else if ( ( (argc == 2) and ( (str_argv[1] == "--help") or (str_argv[1] == "-h") ) ) or 
-	          (argc < 3) ) {
+	          (argc < 4) ) {
 		writeUsage();
 		exit(EXIT_SUCCESS);
 	}
@@ -38,7 +38,8 @@ int main(int argc, char *argv[])
 	igbfs_obj.parseParams(str_argv);
 	igbfs_obj.init();
 	igbfs_obj.findBackdoor();
-	igbfs_obj.solveInstance();
+	// Don't solve a SAT instance via the found backdoor for a while:
+	//igbfs_obj.solveInstance();
 	igbfs_obj.reportResult();
 	
 	return 0;
@@ -51,11 +52,11 @@ void printVersion()
 
 void writeUsage()
 {
-	cout << "USAGE: ./alias <cnf-file> <decomposition-set-file> <incr-sat-solver> [options] \n \n";
+	cout << "USAGE: ./alias <cnf-file> <decomposition-set-file> <incr-sat-solver> [options] \n";
 	cout << "decomposition-set-file              [OBLIGATORY] Name of a PCS (Parameter Configuration Space) file with a start point.\n";
 	cout << "incr-sat-solver (default: cadical2) [OBLIGATORY] Name of an incremental SAT solver;";
 	cout << "\n";
-	cout << "CORE OPTIONS: \n \n";
+	cout << "CORE OPTIONS: \n";
 	cout << "-opt-alg     = <unsigned> (default: 1+1)    [OPTIONAL]   Optimization algorithm.\n";
 	cout << "	0: random search in the whole space" << endl;
 	cout << "	1: random search reduce size by one" << endl;
@@ -69,8 +70,7 @@ void writeUsage()
 	cout << "	9: simple hill climbing (add/remove/replace)" << endl;
 	cout << "-backdoor    = <string>                     [OPTIONAL]   Name of a file that contains a backdoor (numeration from 1) \n";
 	cout << "--solve                                     [OPTIONAL]   Enable solving of a given instance by a found (or a given) backdoor \n";
-	cout << "\n";
-	cout << "MAIN OPTIONS: \n \n";
+	cout << "MAIN OPTIONS: \n";
 	cout << "-cpu-lim     = <int> (default: 3600)        [OPTIONAL]   CPU wall time limit in seconds \n";
 	cout << "-seed        = <int32> (default: 0)         [OPTIONAL]   Random seed \n";
 	cout << "-verb        = <int32> [0..2] (default: 1)  [OPTIONAL]   Verbosity \n";

@@ -1,2 +1,5 @@
 *.o
 *.a
+*.cnf
+out_*
+alias_*

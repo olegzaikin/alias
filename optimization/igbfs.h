@@ -15,19 +15,19 @@ class igbfs : public base_local_search
 {
 public:
 	void backJump();
-	point permutateRecordPoint();
-	point randPermutateRecordPoint();
+	Point permutateRecordPoint();
+	Point randPermutateRecordPoint();
 	//void GBFS(const point start_point);
-	void updateLocalRecord(point cur_point, int neighbor_index = -1, int neighbor_size = -1);
-	point jumpPoint(point cur_point);
-	vector<point> neighbors(point p, vector<bool> &is_add_vars, int neigh_type = 0);
-	bool processNeighborhood(vector<point> neighbors_points, point &neigh_center,
+	void updateLocalRecord(Point cur_point, int neighbor_index = -1, int neighbor_size = -1);
+	Point jumpPoint(Point cur_point);
+	vector<Point> neighbors(Point p, vector<bool> &is_add_vars, int neigh_type = 0);
+	bool processNeighborhood(vector<Point> neighbors_points, Point &neigh_center,
 		vector<bool> is_add_vars, bool &is_break, bool is_add_remove_vars_req = false);
-	void HCVJ(point start_point);
+	void HCVJ(Point start_point);
 	void randSearchWholeSpace();
 	void randSearchReduceOneVar();
-	void simpleHillClimbing(int neigh_type = 0, point p = point());
-	void simpleHillClimbingAddRemovePartialRaplace(point p = point());
+	void simpleHillClimbing(int neigh_type = 0, Point p = Point());
+	void simpleHillClimbingAddRemovePartialRaplace(Point p = Point());
 	void steepestAscentHillClimbing();
 	void tabuSearch();
 	void iteratedHCVJ(); // iterated hill climbing with variables-based jump
@@ -35,9 +35,9 @@ public:
 	void onePlusOneNoMemory();
 	void onePlusOneSimpleHillClimbing();
 	int findBackdoor();
-	point generateRandPoint(const unsigned point_var_count);
+	Point generateRandPoint(const unsigned point_var_count);
 protected:
-	unsigned get_diff_var(point p1, point p2);
+	unsigned get_diff_var(Point p1, Point p2);
 };
 
 #endif

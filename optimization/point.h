@@ -9,7 +9,7 @@
 
 using namespace std;
 
-struct var
+struct Var
 {
 	unsigned value;
 	unsigned global_records;
@@ -17,32 +17,32 @@ struct var
 	double obj_val_remove;
 	double obj_val_add;
 	
-	bool operator==(const var a)
+	bool operator==(const Var a)
 	{
 		return ((*this).value == a.value);
 	}
 };
 
-class point
+class Point
 {
 public:
 	vector<bool> value;
 	double estimation;
 	
 	unsigned weight();
-	string getStr(const vector<var> vars);
+	string getStr(const vector<Var> vars);
 	
-	bool operator==(const point& p) const { return value == p.value; }
+	bool operator==(const Point& p) const { return value == p.value; }
 };
 
-inline unsigned point::weight() {
+inline unsigned Point::weight() {
 	unsigned result = 0;
 	for (auto x : value) 
 		result += x ? 1 : 0;
 	return result;
 }
 
-inline string point::getStr(const vector<var> vars) {
+inline string Point::getStr(const vector<Var> vars) {
 	stringstream sstream;
 	for (unsigned i = 0; i < value.size(); i++)
 		if (value[i]) sstream << vars[i].value << " ";

@@ -6,27 +6,27 @@
 #include <iterator>
 #include <set>
 
-bool compareByVarCalculations(const var &a, const var &b)
+bool compareByVarCalculations(const Var &a, const Var &b)
 {
 	return a.calculations < b.calculations;
 }
 
-bool compareByVarRecords(const var &a, const var &b)
+bool compareByVarRecords(const Var &a, const Var &b)
 {
 	return a.global_records < b.global_records;
 }
 
-bool compareByVarValue(const var &a, const var &b)
+bool compareByVarValue(const Var &a, const Var &b)
 {
 	return a.value < b.value;
 }
 
-bool compareByVarRemObjVal(const var &a, const var &b)
+bool compareByVarRemObjVal(const Var &a, const Var &b)
 {
 	return a.obj_val_remove < b.obj_val_remove;
 }
 
-bool compareByVarAddObjVal(const var &a, const var &b)
+bool compareByVarAddObjVal(const Var &a, const Var &b)
 {
 	return a.obj_val_add < b.obj_val_add;
 }
@@ -44,10 +44,10 @@ void igbfs::backJump() {
 	cout << "* is_jump_mode " << is_jump_mode << endl;
 }
 
-point igbfs::permutateRecordPoint()
+Point igbfs::permutateRecordPoint()
 {
 	cout << "* permutate record point" << endl;
-	vector<var> mod_vars, extra_vars;
+	vector<Var> mod_vars, extra_vars;
 	for (unsigned i = 0; i < vars.size(); i++)
 		if (global_record_point.value[i])
 			mod_vars.push_back(vars[i]);
@@ -56,7 +56,7 @@ point igbfs::permutateRecordPoint()
 	cout << "point before mod (cur global min) : ";
 	cout << global_record_point.getStr(vars);
 	// get additional vars with low calculations
-	vector<var> add_calc_vars = extra_vars;
+	vector<Var> add_calc_vars = extra_vars;
 	sort(add_calc_vars.begin(), add_calc_vars.end(), compareByVarCalculations);
 	cout << "add_calc_vars sorted by calculations : " << endl;
 	for (auto x : add_calc_vars)
@@ -64,8 +64,8 @@ point igbfs::permutateRecordPoint()
 	cout << endl << "get first " << ADD_VARS_CALC << " of them" << endl;
 	add_calc_vars.resize(ADD_VARS_CALC);
 	// exclude best calc vars from extra vars
-	vector<var> extra_vars_wout_add_calc;
-	vector<var>::iterator it;
+	vector<Var> extra_vars_wout_add_calc;
+	vector<Var>::iterator it;
 	for (auto x : extra_vars) {
 		it = find(add_calc_vars.begin(), add_calc_vars.end(), x);
 		if (it == add_calc_vars.end())
@@ -73,7 +73,7 @@ point igbfs::permutateRecordPoint()
 	}
 	cout << "extra_vars_wout_add_calc size " << extra_vars_wout_add_calc.size() << endl;
 	// get additional vars with high global records
-	vector<var> add_records_vars = extra_vars_wout_add_calc;
+	vector<Var> add_records_vars = extra_vars_wout_add_calc;
 	sort(add_records_vars.begin(), add_records_vars.end(), compareByVarRecords);
 	reverse(begin(add_records_vars), end(add_records_vars));
 	cout << "add_records_vars sorted (reverse) by records : " << endl;
@@ -94,7 +94,7 @@ point igbfs::permutateRecordPoint()
 		cout << x.value << " ";
 	cout << endl;
 	
-	point mod_point;
+	Point mod_point;
 	mod_point.value.resize(vars.size());
 	for (unsigned i = 0; i < vars.size(); i++)
 		mod_point.value[i] = false;
@@ -123,7 +123,7 @@ point igbfs::permutateRecordPoint()
 void igbfs::iteratedHCVJ()
 {
 	cout << "iterated hill climbing with variables-based jump \n";
-	point start_point;
+	Point start_point;
 	start_point.value.resize(vars.size());
 	for (auto x : start_point.value)
 		x = true;
@@ -159,13 +159,13 @@ void igbfs::iteratedHCVJ()
 	cout << "interrupted points : " << interrupted_points_count << endl;
 }
 
-void igbfs::updateLocalRecord(point cur_point, int neighbor_index, int neighbor_size)
+void igbfs::updateLocalRecord(Point cur_point, int neighbor_index, int neighbor_size)
 {
 	local_record_point = cur_point;
 	
 	stringstream sstream;
 	if (local_record_point.estimation < global_record_point.estimation) {
-		point prev_global_record_point = global_record_point;
+		Point prev_global_record_point = global_record_point;
 		global_record_point = local_record_point;
 		cout << "elapsed wall time : " << timeFromStart() << " sec | " << 
 			    "record backdoor with " << global_record_point.weight() << " vars | " <<
@@ -221,12 +221,12 @@ void igbfs::updateLocalRecord(point cur_point, int neighbor_index, int neighbor_
 		local_record_point = jumpPoint(cur_point);
 }
 
-point igbfs::jumpPoint(point cur_point)
+Point igbfs::jumpPoint(Point cur_point)
 {
 	local_record_point.estimation = HUGE_VAL;
 	//cout << "* forget global record" << endl;
 	before_jump_point = cur_point;
-	point jump_point = cur_point;
+	Point jump_point = cur_point;
 	unsigned changed_vals = 0;
 	mt19937 mt(time(0));
 	size_t cur_point_var_count = cur_point.value.size();
@@ -305,9 +305,9 @@ int igbfs::findBackdoor()
 	return 1;
 }
 
-point igbfs::generateRandPoint(const unsigned point_var_count)
+Point igbfs::generateRandPoint(const unsigned point_var_count)
 {
-	point p;
+	Point p;
 	size_t total_var_count = vars.size();
 	p.value.resize(total_var_count);
 	for (auto x : p.value)
@@ -345,7 +345,7 @@ void igbfs::randSearchWholeSpace()
 		do {
 			random_size = dist(mt);
 		} while (random_size < 10); // TODO - remove after fixes in ALIAS.py
-		point p = generateRandPoint(random_size);
+		Point p = generateRandPoint(random_size);
 		
 		calculateEstimation(p);
 		if (p.estimation <= 0)
@@ -368,7 +368,7 @@ void igbfs::randSearchReduceOneVar()
 	is_random_search = true;
 	
 	// first, calculate on a start point - all variables
-	point p;
+	Point p;
 	size_t total_var_count = vars.size();
 	p.value.resize(total_var_count);
 	for (auto x : p.value)
@@ -378,7 +378,7 @@ void igbfs::randSearchReduceOneVar()
 
 	unsigned cur_set_size = total_var_count-1;
 	for (;;) {
-		point p = generateRandPoint(cur_set_size);
+		Point p = generateRandPoint(cur_set_size);
 
 		calculateEstimation(p);
 		if (p.estimation <= 0)
@@ -400,7 +400,7 @@ void igbfs::randSearchReduceOneVar()
 	}
 }
 
-void igbfs::HCVJ(point start_point)
+void igbfs::HCVJ(Point start_point)
 {
     bool is_record_updated;
     vars_decr_times = 0;
@@ -425,7 +425,7 @@ void igbfs::HCVJ(point start_point)
 				is_break = true;
 				break; // if time is up, then stop GBFS
 			}
-			point cur_point = local_record_point;
+			Point cur_point = local_record_point;
 			if (i >= 0)
 				cur_point.value[changing_vars[i]] = local_record_point.value[changing_vars[i]] ? false : true;
 			if  (isChecked(cur_point)) {
@@ -474,14 +474,14 @@ void igbfs::HCVJ(point start_point)
     cout << "HCVJ() end" << endl << endl;
 }
 
-vector<point> igbfs::neighbors(point neigh_center, vector<bool> &is_add_vars, int neigh_type)
+vector<Point> igbfs::neighbors(Point neigh_center, vector<bool> &is_add_vars, int neigh_type)
 {
 	if (verbosity > 0) {
 		cout << "start of neighbors()" << endl;
 		cout << "neigh_center size : " << neigh_center.value.size() << endl;
 	}
 
-	vector<point> neighbors_points;
+	vector<Point> neighbors_points;
 	// determine which variables can be added/removed from the given point
 	is_add_vars.resize(vars.size());
 	for (unsigned i = 0; i < neigh_center.value.size(); i++)
@@ -493,10 +493,10 @@ vector<point> igbfs::neighbors(point neigh_center, vector<bool> &is_add_vars, in
 	}
 	
 	if (neigh_type <= 1) { // add add/remove points
-		vector<point> remove_neighbors, add_neighbors;
+		vector<Point> remove_neighbors, add_neighbors;
 		// add 'add/remove' points and shuffle them
 		for (unsigned i = 0; i < neigh_center.value.size(); i++) {
-			point new_p = neigh_center;
+			Point new_p = neigh_center;
 			if (neigh_center.value[i] == true) {
 				new_p.value[i] = false;
 				remove_neighbors.push_back(new_p);
@@ -513,9 +513,9 @@ vector<point> igbfs::neighbors(point neigh_center, vector<bool> &is_add_vars, in
 			neighbors_points.push_back(x);
 	}
 	else if (neigh_type == 2) { // add/remove vars sorted by obj function's values
-		vector<var> remove_vars_w_obj, remove_vars_no_obj, add_vars_w_obj, add_vars_no_obj;
+		vector<Var> remove_vars_w_obj, remove_vars_no_obj, add_vars_w_obj, add_vars_no_obj;
 		for (unsigned i = 0; i < is_add_vars.size(); i++) {
-			var v = vars[i];
+			Var v = vars[i];
 			if (is_add_vars[i]) {
 				if (v.obj_val_add == MAX_OBJ_FUNC_VALUE) {
 					v.obj_val_add = -1;
@@ -533,7 +533,7 @@ vector<point> igbfs::neighbors(point neigh_center, vector<bool> &is_add_vars, in
 					remove_vars_w_obj.push_back(v);
 			}
 		}
-		vector<var> remove_vars, add_vars;
+		vector<Var> remove_vars, add_vars;
 		random_shuffle(remove_vars_no_obj.begin(), remove_vars_no_obj.end());
 		for (auto x : remove_vars_no_obj)
 			remove_vars.push_back(x);
@@ -559,7 +559,7 @@ vector<point> igbfs::neighbors(point neigh_center, vector<bool> &is_add_vars, in
 		}
 		for (auto x : remove_vars) {
 			int pos = getVarPos(x.value);
-			point p = neigh_center;
+			Point p = neigh_center;
 			p.value[pos] = false;
 			neighbors_points.push_back(p);
 			/*if (verbosity > 0) {
@@ -575,7 +575,7 @@ vector<point> igbfs::neighbors(point neigh_center, vector<bool> &is_add_vars, in
 		if (add_vars.size() > 0) {
 			for (auto y : add_vars) {
 				int pos = getVarPos(y.value);
-				point p = neigh_center;
+				Point p = neigh_center;
 				p.value[pos] = true;
 				neighbors_points.push_back(p);
 			}
@@ -583,7 +583,7 @@ vector<point> igbfs::neighbors(point neigh_center, vector<bool> &is_add_vars, in
 	}
 
 	if (neigh_type == 1) { // add 'replace' points
-		vector<point> replace_neighbors;
+		vector<Point> replace_neighbors;
 		if (verbosity > 0) {
 			cout << "cur center point : " << endl;
 			for (unsigned j = 0; j < neigh_center.value.size(); j++)
@@ -613,7 +613,7 @@ vector<point> igbfs::neighbors(point neigh_center, vector<bool> &is_add_vars, in
 			cout << "first 10 replace points : " << endl;
 		for (auto x : p_var_indecies) {
 			for (auto y : notp_var_indecies) {
-				point new_p = neigh_center;
+				Point new_p = neigh_center;
 				new_p.value[x] = false;
 				new_p.value[y] = true;
 				replace_neighbors.push_back(new_p);
@@ -636,7 +636,7 @@ vector<point> igbfs::neighbors(point neigh_center, vector<bool> &is_add_vars, in
 	return neighbors_points;
 }
 
-unsigned igbfs::get_diff_var(point p1, point p2)
+unsigned igbfs::get_diff_var(Point p1, Point p2)
 {
 	vector<unsigned> vec1 = uintVecFromPoint(p1);
 	vector<unsigned> vec2 = uintVecFromPoint(p2);
@@ -658,7 +658,7 @@ unsigned igbfs::get_diff_var(point p1, point p2)
 	return diff_vec[0];
 }
 
-bool igbfs::processNeighborhood(vector<point> neighbors_points, point &neigh_center, 
+bool igbfs::processNeighborhood(vector<Point> neighbors_points, Point &neigh_center, 
 								vector<bool> is_add_vars, bool &is_break, bool is_add_remove_vars_req)
 {
 	if (verbosity > 0)
@@ -710,14 +710,14 @@ bool igbfs::processNeighborhood(vector<point> neighbors_points, point &neigh_cen
 	return is_local_record_updated;
 }
 
-void igbfs::simpleHillClimbing(int neigh_type, point p)
+void igbfs::simpleHillClimbing(int neigh_type, Point p)
 {
 	cout << "simpleHillClimbing()\n";
 	is_jump_mode = false;
 	is_random_search = false;
-	vector<var> add_remove_vars;
+	vector<Var> add_remove_vars;
 	
-	point neigh_center;
+	Point neigh_center;
 	if (p.value.size() > 0) { // if a start point is given, use it
 		neigh_center = p;
 		cout << "start point is given : \n";
@@ -739,7 +739,7 @@ void igbfs::simpleHillClimbing(int neigh_type, point p)
 	for(;;) {
 		bool is_local_record_updated = false;
 		vector<bool> is_add_vars;
-		vector<point> neighbors_points = neighbors(neigh_center, is_add_vars, neigh_type);
+		vector<Point> neighbors_points = neighbors(neigh_center, is_add_vars, neigh_type);
 		int neighbor_index = -1;
 		for (auto neighbor : neighbors_points) {
 			neighbor_index++;
@@ -776,7 +776,7 @@ void igbfs::steepestAscentHillClimbing()
 	is_random_search = false;
 
 	// first, calculate on a start point - all variables
-	point neigh_center;
+	Point neigh_center;
 	size_t total_var_count = vars.size();
 	neigh_center.value.resize(total_var_count);
 	for (auto x : neigh_center.value)
@@ -788,7 +788,7 @@ void igbfs::steepestAscentHillClimbing()
 	for (;;) {
 		bool is_local_record_updated = false;
 		vector<bool> is_add_vars;
-		vector<point> neighbors_points = neighbors(neigh_center, is_add_vars);
+		vector<Point> neighbors_points = neighbors(neigh_center, is_add_vars);
 		for (auto neighbor : neighbors_points) {
 			calculateEstimation(neighbor);
 			if (neighbor.estimation <= 0)
@@ -823,7 +823,7 @@ void igbfs::tabuSearch()
 	is_random_search = false;
 
 	// first, calculate on a start point - all variables
-	point neigh_center;
+	Point neigh_center;
 	size_t total_var_count = vars.size();
 	neigh_center.value.resize(total_var_count);
 	for (auto x : neigh_center.value)
@@ -832,12 +832,12 @@ void igbfs::tabuSearch()
 	updateLocalRecord(neigh_center);
 	
 	int max_tabu_list_size = 1000;
-	vector<point> tabu_list;
-	point best_point_in_neigh;
+	vector<Point> tabu_list;
+	Point best_point_in_neigh;
 	bool is_break = false;
 	vector<bool> is_add_vars;
 	for (;;) {
-		vector<point> neighbors_points = neighbors(neigh_center, is_add_vars);
+		vector<Point> neighbors_points = neighbors(neigh_center, is_add_vars);
 		best_point_in_neigh.estimation = HUGE_VALF;
 		for (auto neighbor : neighbors_points) {
 			if (find(tabu_list.begin(), tabu_list.end(), neighbor) != tabu_list.end())
@@ -877,7 +877,7 @@ void igbfs::onePlusOne(int fcalc_lim, double time_from_last_update, double time_
 	is_random_search = true;
 
 	// first, calculate on a start point - all variables
-	point neigh_center;
+	Point neigh_center;
 	size_t total_var_count = vars.size();
 	neigh_center.value.resize(total_var_count);
 	for (auto x : neigh_center.value)
@@ -893,7 +893,7 @@ void igbfs::onePlusOne(int fcalc_lim, double time_from_last_update, double time_
 	int update_fcalc = -1;
 
 	for (;;) {
-		point candidate_point = neigh_center;
+		Point candidate_point = neigh_center;
 		for (unsigned i=0; i<total_var_count; i++) {
 			double val = dist(mt);
 			if (val < prob)
@@ -945,7 +945,7 @@ void igbfs::onePlusOneNoMemory()
 	is_random_search = true;
 
 	// first, calculate on a start point - all variables
-	point neigh_center;
+	Point neigh_center;
 	size_t total_var_count = vars.size();
 	neigh_center.value.resize(total_var_count);
 	for (auto x : neigh_center.value)
@@ -958,7 +958,7 @@ void igbfs::onePlusOneNoMemory()
 	double prob = (double)1 / (double)total_var_count;
 
 	for (;;) {
-		point candidate_point = neigh_center;
+		Point candidate_point = neigh_center;
 		for (unsigned i = 0; i < total_var_count; i++) {
 			double val = dist(mt);
 			if (val < prob)
@@ -981,14 +981,14 @@ void igbfs::onePlusOneNoMemory()
 }
 
 
-void igbfs::simpleHillClimbingAddRemovePartialRaplace(point p)
+void igbfs::simpleHillClimbingAddRemovePartialRaplace(Point p)
 {
 	cout << "simpleHillClimbingAddRemovePartialRaplace()\n";
 	is_jump_mode = false;
 	is_random_search = false;
-	vector<var> add_remove_vars;
+	vector<Var> add_remove_vars;
 
-	point neigh_center;
+	Point neigh_center;
 	if (p.value.size() > 0) { // if a start point is given, use it
 		neigh_center = p;
 		cout << "start point is given : \n";
@@ -1009,7 +1009,7 @@ void igbfs::simpleHillClimbingAddRemovePartialRaplace(point p)
 	bool is_break = false;
 	for (;;) {
 		vector<bool> is_add_vars;
-		vector<point> neighbors_points = neighbors(neigh_center, is_add_vars, 2); // add/remove first
+		vector<Point> neighbors_points = neighbors(neigh_center, is_add_vars, 2); // add/remove first
 		if (is_add_vars.size() != vars.size()) {
 			cerr << "is_add_vars.size() != vars.size()" << endl;
 			exit(-1);
@@ -1029,7 +1029,7 @@ void igbfs::simpleHillClimbingAddRemovePartialRaplace(point p)
 			continue;
 		
 		cout << endl << "cur bkv : " << global_record_point.estimation << endl;
-		vector<var> add_vars, remove_vars;
+		vector<Var> add_vars, remove_vars;
 		bool is_add_var_inter = false;
 		int inter_remove_var = 0;
 		for (unsigned i=0; i<is_add_vars.size(); i++)
@@ -1059,7 +1059,7 @@ void igbfs::simpleHillClimbingAddRemovePartialRaplace(point p)
 		}*/
 		
 		// remove vars with interrupted objective function first
-		vector<var> remove_vars_w_obj_f_val, remove_vars_no_obj_f_val;
+		vector<Var> remove_vars_w_obj_f_val, remove_vars_no_obj_f_val;
 		for (auto &var : remove_vars) {
 			if (var.obj_val_remove >= MAX_OBJ_FUNC_VALUE) {
 				var.obj_val_remove = -1;
@@ -1078,7 +1078,7 @@ void igbfs::simpleHillClimbingAddRemovePartialRaplace(point p)
 			remove_vars.push_back(v);
 		for (auto v : remove_vars_w_obj_f_val)
 			remove_vars.push_back(v);
-		vector<var> sorted_remove_vars_before_erasing = remove_vars;
+		vector<Var> sorted_remove_vars_before_erasing = remove_vars;
 		cout << endl << "sorted remove vars (interrupted first) : " << endl;
 		for (auto v : remove_vars)
 			cout << v.value << " " << " " << v.obj_val_remove << endl;
@@ -1086,14 +1086,14 @@ void igbfs::simpleHillClimbingAddRemovePartialRaplace(point p)
 		remove_vars.resize(REPLACE_VARS);
 		// sort add vars by estimation
 		sort(add_vars.begin(), add_vars.end(), compareByVarAddObjVal);
-		vector<var> sorted_add_vars_before_erasing = add_vars;
+		vector<Var> sorted_add_vars_before_erasing = add_vars;
 		cout << endl << "sorted add vars : " << endl;
 		for (auto v : add_vars)
 			cout << v.value << " " << " " << v.obj_val_add << endl;
 		cout << endl << "get first " << REPLACE_VARS << " of them" << endl;
 		add_vars.resize(REPLACE_VARS);
 		// remove vars with interrupted value of the objective function
-		for (vector<var>::iterator it = add_vars.begin();
+		for (vector<Var>::iterator it = add_vars.begin();
 			it != add_vars.end();) 
 		{
 			if (it->obj_val_add >= MAX_OBJ_FUNC_VALUE)
@@ -1112,7 +1112,7 @@ void igbfs::simpleHillClimbingAddRemovePartialRaplace(point p)
 				int pos1 = getVarPos(x.value);
 				for (auto y : add_vars) {
 					int pos2 = getVarPos(y.value);
-					point p = neigh_center;
+					Point p = neigh_center;
 					p.value[pos1] = false;
 					p.value[pos2] = true;
 					neighbors_points.push_back(p);
@@ -1125,12 +1125,12 @@ void igbfs::simpleHillClimbingAddRemovePartialRaplace(point p)
 			}
 		}
 		// then add all remaining points
-		vector<point> vec_p;
+		vector<Point> vec_p;
 		for (auto x : sorted_remove_vars_before_erasing) {
 			int pos1 = getVarPos(x.value);
 			for (auto y : sorted_add_vars_before_erasing) {
 				int pos2 = getVarPos(y.value);
-				point p = neigh_center;
+				Point p = neigh_center;
 				p.value[pos1] = false;
 				p.value[pos2] = true;
 				vec_p.push_back(p);
