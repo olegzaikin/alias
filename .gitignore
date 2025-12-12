@@ -3,3 +3,5 @@
 *.cnf
 out_*
 alias_*
+/optimization/*.cnf
+/optimization/*.pcs

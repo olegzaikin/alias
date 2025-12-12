@@ -22,11 +22,15 @@ base_local_search::base_local_search() :
 	opt_alg(5), // 1+1
 	total_func_calculations(0),
 	total_skipped_func_calculations(0),
+	sample_size(1000),
+	incr_variables(8),
+	seed(0),
 	verbosity(0),
 	time_limit_per_task(10),
 	are_vars_in_row(false)
 {
-	start_t = chrono::high_resolution_clock::now();
+	start_time = chrono::high_resolution_clock::now(); 
+	// Initialize a random generator by the given seed:
 	known_backdoor.value.resize(0);
 	global_record_point.value.resize(0);
 	local_record_point.estimation = HUGE_VAL;
@@ -302,15 +306,15 @@ string base_local_search::getCmdOutput(const char* cmd) {
 
 double base_local_search::timeFromStart()
 {
-	chrono::high_resolution_clock::time_point cur_t = chrono::high_resolution_clock::now();
-	chrono::duration<double> time_span = chrono::duration_cast<chrono::duration<double>>(cur_t - start_t);
+	chrono::high_resolution_clock::time_point cur_time = chrono::high_resolution_clock::now();
+	chrono::duration<double> time_span = chrono::duration_cast<chrono::duration<double>>(cur_time - start_time);
 	return time_span.count();
 }
 
 bool base_local_search::isTimeExceeded()
 {
-	chrono::high_resolution_clock::time_point cur_t = chrono::high_resolution_clock::now();
-	chrono::duration<double> time_span = chrono::duration_cast<chrono::duration<double>>(cur_t - start_t);
+	chrono::high_resolution_clock::time_point cur_time = chrono::high_resolution_clock::now();
+	chrono::duration<double> time_span = chrono::duration_cast<chrono::duration<double>>(cur_time - start_time);
 	if (time_span.count() >= cpu_lim) {
 		cout << "*** time is up" << endl;
 		return true;
@@ -378,6 +382,8 @@ void base_local_search::parseParams(vector<string> str_argv)
 			istringstream(res_str) >> verbosity;
 		else if (strPrefix(par_str, "-backdoor=", res_str))
 			istringstream(res_str) >> backdoor_file_name;
+		else if (strPrefix(par_str, "-seed=", res_str))
+			istringstream(res_str) >> seed;
 		else if (par_str == "--solve")
 			is_solve = true;
 	}
@@ -390,6 +396,7 @@ void base_local_search::parseParams(vector<string> str_argv)
 	cout << "is solve " << is_solve << endl;
 	cout << "verbosity " << verbosity << endl;
 	cout << "backdoor name " << backdoor_file_name << endl;
+	cout << "seed " << seed << endl;
 
 	string base_cnf_name = cnf_name;
 	size_t pos = cnf_name.find_last_of("/");
@@ -404,6 +411,7 @@ void base_local_search::parseParams(vector<string> str_argv)
 
 void base_local_search::init()
 {
+	rand_engine.seed(seed);
 	loadVars();
 	loadBackdoor();
 	setGraphFileName();
@@ -441,8 +449,9 @@ void base_local_search::calculateEstimation(Point &cur_point, bool use_memory)
 		}
 	}
 	
-	SatSolver solver(solver_name);
-	cur_point.estimation = solver.estimate(cnf_name, cur_point.value);
+	SatSolver solver(solver_name, sample_size, incr_variables);
+	vector<unsigned> point_uint = uintVecFromPoint(cur_point);
+	cur_point.estimation = solver.estimate(cnf_name, point_uint, rand_engine);
 
 	// Save the point if memory is being used:
 	if (use_memory) {

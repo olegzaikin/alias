@@ -228,11 +228,10 @@ Point igbfs::jumpPoint(Point cur_point)
 	before_jump_point = cur_point;
 	Point jump_point = cur_point;
 	unsigned changed_vals = 0;
-	mt19937 mt(time(0));
 	size_t cur_point_var_count = cur_point.value.size();
 	uniform_int_distribution<unsigned> dist(0, cur_point_var_count - 1);
 	for (;;) {
-		unsigned rand_ind = dist(mt);
+		unsigned rand_ind = dist(rand_engine);
 		if (jump_point.value[rand_ind]) {
 			jump_point.value[rand_ind] = false;
 			changed_vals++;
@@ -313,12 +312,11 @@ Point igbfs::generateRandPoint(const unsigned point_var_count)
 	for (auto x : p.value)
 		x = false;
 
-	mt19937 mt(time(0));
 	uniform_int_distribution<unsigned> dist(0, total_var_count - 1);
 
 	set<unsigned> rand_set;
 	for (;;) {
-		unsigned val = dist(mt);
+		unsigned val = dist(rand_engine);
 		rand_set.insert(val);
 		if (rand_set.size() == point_var_count)
 			break;
@@ -336,15 +334,11 @@ void igbfs::randSearchWholeSpace()
 	is_jump_mode = false;
 	is_random_search = true;
 	
-	mt19937 mt(time(0));
 	size_t total_var_count = vars.size();
 	uniform_int_distribution<unsigned> dist(1, total_var_count - 1);
 
 	for (;;) {
-		unsigned random_size;
-		do {
-			random_size = dist(mt);
-		} while (random_size < 10); // TODO - remove after fixes in ALIAS.py
+		unsigned random_size = dist(rand_engine);
 		Point p = generateRandPoint(random_size);
 		
 		calculateEstimation(p);
@@ -885,7 +879,6 @@ void igbfs::onePlusOne(int fcalc_lim, double time_from_last_update, double time_
 	calculateEstimation(neigh_center);
 	updateLocalRecord(neigh_center);
 
-	mt19937 mt(time(0));
 	uniform_real_distribution<double> dist(0, 1);
 	double prob = (double)1 / (double)total_var_count;
 	chrono::high_resolution_clock::time_point update_start_t = chrono::high_resolution_clock::now();
@@ -895,7 +888,7 @@ void igbfs::onePlusOne(int fcalc_lim, double time_from_last_update, double time_
 	for (;;) {
 		Point candidate_point = neigh_center;
 		for (unsigned i=0; i<total_var_count; i++) {
-			double val = dist(mt);
+			double val = dist(rand_engine);
 			if (val < prob)
 				candidate_point.value[i] = (candidate_point.value[i] == true) ? false : true;
 		}
@@ -953,14 +946,13 @@ void igbfs::onePlusOneNoMemory()
 	calculateEstimation(neigh_center, false);
 	updateLocalRecord(neigh_center);
 
-	mt19937 mt(time(0));
 	uniform_real_distribution<double> dist(0, 1);
 	double prob = (double)1 / (double)total_var_count;
 
 	for (;;) {
 		Point candidate_point = neigh_center;
 		for (unsigned i = 0; i < total_var_count; i++) {
-			double val = dist(mt);
+			double val = dist(rand_engine);
 			if (val < prob)
 				candidate_point.value[i] = (candidate_point.value[i] == true) ? false : true;
 		}

@@ -70,6 +70,20 @@ public:
 	int total_skipped_func_calculations;
 
 protected:
+	// Input variables:
+	string cnf_name;
+	string solver_name;
+	string pcs_name;
+	int cpu_cores;
+	double cpu_lim;
+	double wall_time_solving;
+	unsigned sample_size;
+	unsigned incr_variables;
+	unsigned seed;
+	int verbosity;
+	// Internal variables:
+	fstream graph_file;
+	string graph_file_name;
 	vector<Var> vars;
 	bool are_vars_in_row;
 	unordered_map<string, double> checked_points;
@@ -77,25 +91,16 @@ protected:
 	unsigned interrupted_points_count;
 	Point global_record_point;
 	Point local_record_point;
-	string cnf_name;
-	string pcs_name;
-	string graph_file_name;
-	fstream graph_file;
-	string solver_name;
-	int cpu_cores;
-	double cpu_lim;
-	double wall_time_solving;
-	int verbosity;
 	Point before_jump_point;
 	bool is_random_search;
 	unsigned vars_decr_times;
-	chrono::high_resolution_clock::time_point start_t;
+	chrono::high_resolution_clock::time_point start_time;
 	bool is_solve;
 	string result_output_name;
 	string script_out_str;
 	string backdoor_file_name;
 	Point known_backdoor;
-	random_device rd;
+	mt19937 rand_engine;
 	// iteretedHCVJ parameters
 	unsigned jump_lim;
 	unsigned jump_step;
