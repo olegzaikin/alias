@@ -1,5 +1,5 @@
 CPP = g++
-CPPFLAGS = -O3 -std=c++0x
+CPPFLAGS = -O3 -std=c++20 -fopenmp
 
 alias: sat_solver.o base_ls.o igbfs.o alias.o
 	${CPP} ${CPPFLAGS} sat_solver.o base_ls.o igbfs.o alias.o -o alias

@@ -57,7 +57,7 @@ void writeUsage()
 	cout << "incr-sat-solver (default: cadical2) [OBLIGATORY] Name of an incremental SAT solver;";
 	cout << "\n";
 	cout << "CORE OPTIONS: \n";
-	cout << "-opt-alg     = <unsigned> (default: 1+1)    [OPTIONAL]   Optimization algorithm.\n";
+	cout << "-optalg     = <unsigned> (default: 1+1)     [OPTIONAL]   Optimization algorithm.\n";
 	cout << "	0: random search in the whole space" << endl;
 	cout << "	1: random search reduce size by one" << endl;
 	cout << "	2: simple hill climbing (add/remove)" << endl;
@@ -71,8 +71,9 @@ void writeUsage()
 	cout << "-backdoor    = <string>                     [OPTIONAL]   Name of a file that contains a backdoor (numeration from 1) \n";
 	cout << "--solve                                     [OPTIONAL]   Enable solving of a given instance by a found (or a given) backdoor \n";
 	cout << "MAIN OPTIONS: \n";
-	cout << "-cpu-lim     = <int> (default: 3600)        [OPTIONAL]   CPU wall time limit in seconds \n";
-	cout << "-seed        = <int32> (default: 0)         [OPTIONAL]   Random seed \n";
-	cout << "-verb        = <int32> [0..2] (default: 1)  [OPTIONAL]   Verbosity \n";
+	cout << "-cpunum      = <int> (default = all cores) CPU cores" << endl;
+	cout << "-cnftimelim  = <int> (default: 3600)        [OPTIONAL]   CPU wall time limit in seconds \n";
+	cout << "-seed        = <int> (default: 0)           [OPTIONAL]   Random seed \n";
+	cout << "-verb        = <int> [0..2] (default: 1)    [OPTIONAL]   Verbosity \n";
 	cout << "--help       Print help message. \n";
 }

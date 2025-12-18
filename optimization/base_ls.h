@@ -18,8 +18,10 @@
 #include <unordered_map>
 #include <cassert>
 #include "point.h"
+#include "cnf.h"
 
-const double DEFAULT_TIME_LIMIT = 3600;
+const double DEFAULT_ALIAS_TIME_LIMIT = 86400;
+const double DEFAULT_CNF_TIME_LIMIT = 60;
 const unsigned MAX_SOLVING_VARS = 35;
 const unsigned DEFAULT_JUMP_LIM = 3;
 const unsigned MIN_VARS_JUMP = 100;
@@ -74,8 +76,9 @@ protected:
 	string cnf_name;
 	string solver_name;
 	string pcs_name;
-	int cpu_cores;
-	double cpu_lim;
+	int cpu_num;
+	double cnf_time_lim;
+	double alias_time_lim;
 	double wall_time_solving;
 	unsigned sample_size;
 	unsigned incr_variables;
@@ -105,7 +108,7 @@ protected:
 	unsigned jump_lim;
 	unsigned jump_step;
 	bool is_jump_mode;
-	unsigned time_limit_per_task; // limit in seconds for ALIAS.py
+	CNF orig_cnf;
 };
 
 #endif

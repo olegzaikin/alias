@@ -7,25 +7,51 @@
 #include <string>
 #include <cassert>
 #include <random>
+#include <iostream>
+#include "cnf.h"
+
+const double MIN_SOLVING_TIME = 0.01;
 
 using namespace std;
+
+enum SOLVER_OUTPUT{ UNSAT = 0, SAT = 1, INTERR = 2 };
+
+struct result {
+    SOLVER_OUTPUT status;
+	double runtime;
+    void print() {
+        cout << "status : " << status << endl;
+        cout << "runtime : " << runtime << endl;
+    }
+};
 
 class SatSolver
 {
 public:
-    string solver_name;
-    unsigned sample_size;
-    unsigned incr_variables;
-
-    SatSolver(string solver_name, unsigned sample_size, unsigned incr_variables) : 
+    SatSolver(const string solver_name, const CNF cnf, const unsigned cpu_num,
+          const unsigned sample_size, const unsigned incr_vars_num, const double cnf_time_lim) : 
         solver_name(solver_name),
+        cnf(cnf),
+        cpu_num(cpu_num),
         sample_size(sample_size),
-        incr_variables(incr_variables)
+        incr_vars_num(incr_vars_num),
+        cnf_time_lim(cnf_time_lim)
     {
         assert(solver_name != "");
+        assert(cnf.var_num > 0 and cnf.clause_num > 0);
+        assert(cpu_num >= 1);
+        assert(sample_size > 0);
+        assert(incr_vars_num > 0);
+        assert(cnf_time_lim > 0);
     }
-
-    double estimate(const string cnf_name, const vector<unsigned> point, mt19937 &rand_engine);
+    double estimate(const vector<unsigned> point, mt19937 &rand_engine);
+private:
+    string solver_name;
+    CNF cnf;
+    unsigned cpu_num;
+    unsigned sample_size;
+    unsigned incr_vars_num;
+    double cnf_time_lim;
 };
 
 #endif

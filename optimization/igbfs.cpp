@@ -169,8 +169,8 @@ void igbfs::updateLocalRecord(Point cur_point, int neighbor_index, int neighbor_
 		global_record_point = local_record_point;
 		cout << "elapsed wall time : " << timeFromStart() << " sec | " << 
 			    "record backdoor with " << global_record_point.weight() << " vars | " <<
-			    " estimation " << global_record_point.estimation / cpu_cores << " sec on " << 
-			    cpu_cores << " CPU cores" << endl << flush;
+			    " estimation " << global_record_point.estimation / cpu_num << " sec on " << 
+			    cpu_num << " CPU cores" << endl << flush;
 		if (verbosity > 0)
 			printGlobalRecordPoint();
 		if (is_jump_mode) {
@@ -200,7 +200,7 @@ void igbfs::updateLocalRecord(Point cur_point, int neighbor_index, int neighbor_
 			cout << endl;
 		}
 		sstream << global_record_point.weight() << " " << global_record_point.estimation << " " <<
-			global_record_point.estimation / cpu_cores << " " << (unsigned)timeFromStart() << " " << 
+			global_record_point.estimation / cpu_num << " " << (unsigned)timeFromStart() << " " << 
 			total_func_calculations << " " << total_skipped_func_calculations;
 	}
 	else {
@@ -209,7 +209,7 @@ void igbfs::updateLocalRecord(Point cur_point, int neighbor_index, int neighbor_
 				" with weight " << local_record_point.weight() << endl;
 		// update of local minimum after, e.g. HCVJ() jump
 		sstream << "\t" << local_record_point.weight() << " " << local_record_point.estimation << " " <<
-			local_record_point.estimation / cpu_cores << " " << (unsigned)timeFromStart() << " " << 
+			local_record_point.estimation / cpu_num << " " << (unsigned)timeFromStart() << " " << 
 			total_func_calculations << " " << total_skipped_func_calculations;
 	}
 
@@ -257,8 +257,8 @@ int igbfs::findBackdoor()
 
 	// if the decomposition set is unknown and it is required to find it
 	stringstream sstream;
-	cpu_cores = getCpuCores();
-	sstream << "vars est-1-core est-" << cpu_cores << "-cores elapsed-sec elapsed-fcalc skipped_fcalc neigh_index/neigh_size";
+	cpu_num = getCpuCores();
+	sstream << "vars est-1-core est-" << cpu_num << "-cores elapsed-sec elapsed-fcalc skipped_fcalc neigh_index/neigh_size";
 	writeToGraphFile(sstream.str());
 	sstream.str(""); sstream.clear();
 	switch (opt_alg) {
@@ -411,7 +411,7 @@ void igbfs::HCVJ(Point start_point)
 		vector<unsigned> changing_vars;
 		for (unsigned i = 0; i < local_record_point.value.size(); i++)
 			changing_vars.push_back(i);
-		random_shuffle(changing_vars.begin(), changing_vars.end());
+		shuffle(changing_vars.begin(), changing_vars.end(), rand_engine);
 		int changing_vars_count = changing_vars.size();
 		for (int i = -1; i < changing_vars_count; i++) { // i == -1 is required to check a point itself
 			cout << i << endl;
@@ -500,8 +500,8 @@ vector<Point> igbfs::neighbors(Point neigh_center, vector<bool> &is_add_vars, in
 				add_neighbors.push_back(new_p);
 			}
 		}
-		random_shuffle(remove_neighbors.begin(), remove_neighbors.end());
-		random_shuffle(add_neighbors.begin(), add_neighbors.end());
+		shuffle(remove_neighbors.begin(), remove_neighbors.end(), rand_engine);
+		shuffle(add_neighbors.begin(), add_neighbors.end(), rand_engine);
 		neighbors_points = remove_neighbors;
 		for (auto x : add_neighbors)
 			neighbors_points.push_back(x);
@@ -528,13 +528,13 @@ vector<Point> igbfs::neighbors(Point neigh_center, vector<bool> &is_add_vars, in
 			}
 		}
 		vector<Var> remove_vars, add_vars;
-		random_shuffle(remove_vars_no_obj.begin(), remove_vars_no_obj.end());
+		shuffle(remove_vars_no_obj.begin(), remove_vars_no_obj.end(), rand_engine);
 		for (auto x : remove_vars_no_obj)
 			remove_vars.push_back(x);
 		sort(remove_vars_w_obj.begin(), remove_vars_w_obj.end(), compareByVarRemObjVal);
 		for (auto x : remove_vars_w_obj)
 			remove_vars.push_back(x);
-		random_shuffle(add_vars_no_obj.begin(), add_vars_no_obj.end());
+		shuffle(add_vars_no_obj.begin(), add_vars_no_obj.end(), rand_engine);
 		for (auto x : add_vars_no_obj)
 			add_vars.push_back(x);
 		sort(add_vars_w_obj.begin(), add_vars_w_obj.end(), compareByVarAddObjVal);
@@ -622,7 +622,7 @@ vector<Point> igbfs::neighbors(Point neigh_center, vector<bool> &is_add_vars, in
 			}
 		}
 		cout << "neighbors size " << neighbors_points.size() << endl;
-		random_shuffle(replace_neighbors.begin(), replace_neighbors.end());
+		shuffle(replace_neighbors.begin(), replace_neighbors.end(), rand_engine);
 		for (auto x : replace_neighbors)
 			neighbors_points.push_back(x);
 	}
@@ -923,7 +923,7 @@ void igbfs::onePlusOne(int fcalc_lim, double time_from_last_update, double time_
 			writeToGraphFile("--- interrupt (1+1)-EA due to limit");
 			stringstream sstream;
 			sstream << "\t" << global_record_point.weight() << " " << global_record_point.estimation << " " <<
-				global_record_point.estimation / cpu_cores << " " << (unsigned)timeFromStart() << " " <<
+				global_record_point.estimation / cpu_num << " " << (unsigned)timeFromStart() << " " <<
 				total_func_calculations << " " << total_skipped_func_calculations;
 			writeToGraphFile(sstream.str());
 			break;
@@ -1064,7 +1064,7 @@ void igbfs::simpleHillClimbingAddRemovePartialRaplace(Point p)
 		if (remove_vars_w_obj_f_val.size() > 0)
 			sort(remove_vars_w_obj_f_val.begin(), remove_vars_w_obj_f_val.end(), compareByVarRemObjVal);
 		if (remove_vars_no_obj_f_val.size() > 0)
-			random_shuffle(remove_vars_no_obj_f_val.begin(), remove_vars_no_obj_f_val.end());
+			shuffle(remove_vars_no_obj_f_val.begin(), remove_vars_no_obj_f_val.end(), rand_engine);
 		remove_vars.clear();
 		for (auto v : remove_vars_no_obj_f_val)
 			remove_vars.push_back(v);
@@ -1132,7 +1132,7 @@ void igbfs::simpleHillClimbingAddRemovePartialRaplace(Point p)
 		cout << sorted_add_vars_before_erasing.size() << " add vars in total" << endl;
 		cout << vec_p.size() << " additional randomly shuffled points" << endl;
 		cout << "neighbors_points size before additional : " << neighbors_points.size() << endl;
-		random_shuffle(vec_p.begin(), vec_p.end()); // randomly shuffle additional points before adding
+		shuffle(vec_p.begin(), vec_p.end(), rand_engine); // randomly shuffle additional points before adding
 		for (auto p : vec_p) {
 			if (find(neighbors_points.begin(), neighbors_points.end(), p) == neighbors_points.end())
 				neighbors_points.push_back(p);

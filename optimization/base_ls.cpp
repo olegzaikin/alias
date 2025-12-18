@@ -1,14 +1,16 @@
 #include "base_ls.h"
 #include "sat_solver.h"
 #include <sstream>
+#include <omp.h>
 
 base_local_search::base_local_search() :
 	graph_file_name(""),
 	cnf_name(""),
 	solver_name(""),
 	pcs_name(""),
-	cpu_cores(1),
-	cpu_lim(DEFAULT_TIME_LIMIT),
+	cpu_num(0),
+	alias_time_lim(DEFAULT_ALIAS_TIME_LIMIT),
+	cnf_time_lim(DEFAULT_CNF_TIME_LIMIT),
 	skipped_points_count(0),
 	interrupted_points_count(0),
 	wall_time_solving(0),
@@ -22,11 +24,10 @@ base_local_search::base_local_search() :
 	opt_alg(5), // 1+1
 	total_func_calculations(0),
 	total_skipped_func_calculations(0),
-	sample_size(1000),
+	sample_size(100),
 	incr_variables(8),
 	seed(0),
 	verbosity(0),
-	time_limit_per_task(10),
 	are_vars_in_row(false)
 {
 	start_time = chrono::high_resolution_clock::now(); 
@@ -268,11 +269,11 @@ void base_local_search::writeToGraphFile(const string str)
 
 int base_local_search::getCpuCores()
 {
-	int cpu_cores = std::thread::hardware_concurrency();
-	cout << "cpu_cores " << cpu_cores << endl;
-	if (cpu_cores <= 0)
+	int cpu_num = std::thread::hardware_concurrency();
+	//cout << "cpu_num " << cpu_num << endl;
+	if (cpu_num <= 0)
 		exit(-1);
-	return cpu_cores;
+	return cpu_num;
 }
 
 string base_local_search::printUintVector(vector<unsigned> vec)
@@ -315,7 +316,7 @@ bool base_local_search::isTimeExceeded()
 {
 	chrono::high_resolution_clock::time_point cur_time = chrono::high_resolution_clock::now();
 	chrono::duration<double> time_span = chrono::duration_cast<chrono::duration<double>>(cur_time - start_time);
-	if (time_span.count() >= cpu_lim) {
+	if (time_span.count() >= alias_time_lim) {
 		cout << "*** time is up" << endl;
 		return true;
 	}
@@ -324,9 +325,9 @@ bool base_local_search::isTimeExceeded()
 
 bool base_local_search::isEstTooLong() // for simple instances
 {
-	if ((global_record_point.estimation / cpu_cores / 2) <= timeFromStart()) {
+	if ((global_record_point.estimation / cpu_num / 2) <= timeFromStart()) {
 		// additionally divide by 2 for possible satisfiable instances
-		cout << "*** estimation / " << cpu_cores << " and /2 is less than elapsed time" << endl;
+		cout << "*** estimation / " << cpu_num << " and /2 is less than elapsed time" << endl;
 		return true;
 	}
 	return false;
@@ -341,7 +342,7 @@ void base_local_search::reportResult()
 	sstream << "Backdoor (numeration from 1):" << endl;
 	sstream << global_record_point.getStr(vars);
 	sstream << "Estimation for 1 CPU core : " << global_record_point.estimation << " seconds" << endl;
-	sstream << "Estimation for " << cpu_cores << " CPU cores : " << global_record_point.estimation / cpu_cores << " seconds" << endl;
+	sstream << "Estimation for " << cpu_num << " CPU cores : " << global_record_point.estimation / cpu_num << " seconds" << endl;
 	if (is_solve) {
 		sstream << script_out_str << endl;
 	}
@@ -374,10 +375,12 @@ void base_local_search::parseParams(vector<string> str_argv)
 		string res_str;
 		if (strPrefix(par_str, "-solver=", res_str))
 			solver_name = res_str;
-		else if (strPrefix(par_str, "-opt-alg=", res_str))
+		else if (strPrefix(par_str, "-optalg=", res_str))
 			istringstream(res_str) >> opt_alg;
-		else if (strPrefix(par_str, "-cpu-lim=", res_str))
-			istringstream(res_str) >> cpu_lim;
+		else if (strPrefix(par_str, "-cpunum=", res_str))
+			istringstream(res_str) >> cpu_num;
+		else if (strPrefix(par_str, "-cnftimelim=", res_str))
+			istringstream(res_str) >> cnf_time_lim;
 		else if (strPrefix(par_str, "-verb=", res_str))
 			istringstream(res_str) >> verbosity;
 		else if (strPrefix(par_str, "-backdoor=", res_str))
@@ -387,12 +390,15 @@ void base_local_search::parseParams(vector<string> str_argv)
 		else if (par_str == "--solve")
 			is_solve = true;
 	}
+
+	if (cpu_num == 0) cpu_num = getCpuCores();
 	
 	cout << "cnf name " << cnf_name << endl;
 	cout << "start decomposition set name " << pcs_name << endl;
 	cout << "solver name " << solver_name << endl;
 	cout << "opt_alg " << opt_alg << endl;
-	cout << "cpu lim " << cpu_lim << endl;
+	cout << "CPU num " << cpu_num << endl;
+	cout << "CNF time lim " << cnf_time_lim << endl;
 	cout << "is solve " << is_solve << endl;
 	cout << "verbosity " << verbosity << endl;
 	cout << "backdoor name " << backdoor_file_name << endl;
@@ -405,17 +411,17 @@ void base_local_search::parseParams(vector<string> str_argv)
 	}
 	result_output_name = "out_" + base_cnf_name;
 	cout << "result_output_name : " << result_output_name << endl; 
-	
+	orig_cnf.read(cnf_name);
 	assert(cnf_name != "");
 }
 
 void base_local_search::init()
 {
 	rand_engine.seed(seed);
+	omp_set_num_threads(cpu_num);
 	loadVars();
 	loadBackdoor();
 	setGraphFileName();
-	cpu_cores = getCpuCores();
 }
 
 void base_local_search::clearInterruptedChecked()
@@ -449,9 +455,9 @@ void base_local_search::calculateEstimation(Point &cur_point, bool use_memory)
 		}
 	}
 	
-	SatSolver solver(solver_name, sample_size, incr_variables);
 	vector<unsigned> point_uint = uintVecFromPoint(cur_point);
-	cur_point.estimation = solver.estimate(cnf_name, point_uint, rand_engine);
+	SatSolver solver(solver_name, orig_cnf, cpu_num, sample_size, incr_variables, cnf_time_lim);
+	cur_point.estimation = solver.estimate(point_uint, rand_engine);
 
 	// Save the point if memory is being used:
 	if (use_memory) {
@@ -475,49 +481,11 @@ bool base_local_search::isChecked(Point p)
 	return false;
 }
 
-/*
-bool base_local_search::solveInstance()
-{
-	if (isTimeExceeded() || (!is_solve))
-		return false;
-
-	cout << "solve the instance using a record point" << endl;
-
-	stringstream sstream; 
-	sstream << "--- start solving, time " << timeFromStart();
-	writeToGraphFile(sstream.str());
-	sstream.str(""); sstream.clear();
-
-	wall_time_solving = cpu_lim - timeFromStart();
-	if (verbosity > 0)
-		cout << "solving wall time " << wall_time_solving << endl;
-	
-	if (wall_time_solving < (global_record_point.estimation / cpu_cores) / 1000) {
-		cout << "*** stop, wall_time_solving < (global_record_point.estimation / cpu_cores) / 1000)" << endl;
-		return false;
-	}
-
-	if (global_record_point.weight() > MAX_SOLVING_VARS) {
-		cout << "*** stop, record point weight " << global_record_point.weight() << " > " << MAX_SOLVING_VARS << endl;
-		return false;
-	}
-
-	string command_str = getScriptCommand(SOLVE, global_record_point);
-
-	if (verbosity > 1)
-		cout << "command_str : " << command_str << endl;
-	script_out_str = getCmdOutput(command_str.c_str());
-	cout << script_out_str << endl;
-	
-	return true;
-}
-*/
-
 void base_local_search::printGlobalRecordPoint()
 {
 	cout << "point weight : " << global_record_point.weight() << endl;
 	cout << "runtime estimation on 1 CPU core : " << global_record_point.estimation << endl;
-	cout << "runtime estimation on " << cpu_cores << " CPU cores : " << global_record_point.estimation / cpu_cores << endl;
+	cout << "runtime estimation on " << cpu_num << " CPU num : " << global_record_point.estimation / cpu_num << endl;
 	cout << "backdoor : " << endl;
 	cout << global_record_point.getStr(vars);
 }
