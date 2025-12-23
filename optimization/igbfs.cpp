@@ -153,7 +153,7 @@ void igbfs::iteratedHCVJ()
 
 	printGlobalRecordPoint();
 
-	cout << "total local search time " << timeFromStart() << endl;
+	cout << "total local search time " << elapsedWallTime() << endl;
 	cout << "skipped points : " << skipped_points_count << endl;
 	cout << "checked points : " << checked_points.size() << endl;
 	cout << "interrupted points : " << interrupted_points_count << endl;
@@ -167,7 +167,7 @@ void igbfs::updateLocalRecord(Point cur_point, int neighbor_index, int neighbor_
 	if (local_record_point.estimation < global_record_point.estimation) {
 		Point prev_global_record_point = global_record_point;
 		global_record_point = local_record_point;
-		cout << "elapsed wall time : " << timeFromStart() << " sec | " << 
+		cout << "elapsed wall time : " << elapsedWallTime() << " sec | " << 
 			    "record backdoor with " << global_record_point.weight() << " vars | " <<
 			    " estimation " << global_record_point.estimation / cpu_num << " sec on " << 
 			    cpu_num << " CPU cores" << endl << flush;
@@ -200,7 +200,7 @@ void igbfs::updateLocalRecord(Point cur_point, int neighbor_index, int neighbor_
 			cout << endl;
 		}
 		sstream << global_record_point.weight() << " " << global_record_point.estimation << " " <<
-			global_record_point.estimation / cpu_num << " " << (unsigned)timeFromStart() << " " << 
+			global_record_point.estimation / cpu_num << " " << (unsigned)elapsedWallTime() << " " << 
 			total_func_calculations << " " << total_skipped_func_calculations;
 	}
 	else {
@@ -209,7 +209,7 @@ void igbfs::updateLocalRecord(Point cur_point, int neighbor_index, int neighbor_
 				" with weight " << local_record_point.weight() << endl;
 		// update of local minimum after, e.g. HCVJ() jump
 		sstream << "\t" << local_record_point.weight() << " " << local_record_point.estimation << " " <<
-			local_record_point.estimation / cpu_num << " " << (unsigned)timeFromStart() << " " << 
+			local_record_point.estimation / cpu_num << " " << (unsigned)elapsedWallTime() << " " << 
 			total_func_calculations << " " << total_skipped_func_calculations;
 	}
 
@@ -252,8 +252,7 @@ Point igbfs::jumpPoint(Point cur_point)
 
 int igbfs::findBackdoor()
 {
-	if (isKnownBackdoor())
-		return 1;
+	assert(not is_solve);
 
 	// if the decomposition set is unknown and it is required to find it
 	stringstream sstream;
@@ -302,6 +301,14 @@ int igbfs::findBackdoor()
 	}
 
 	return 1;
+}
+
+void igbfs::findBackdoorOrSolve() {
+	if (is_solve) solveInstance();
+	else {
+		findBackdoor();
+		reportOptResult();
+	}
 }
 
 Point igbfs::generateRandPoint(const unsigned point_var_count)
@@ -483,7 +490,7 @@ vector<Point> igbfs::neighbors(Point neigh_center, vector<bool> &is_add_vars, in
 
 	if (verbosity > 0) {
 		cout << "is_add_vars size : " << is_add_vars.size() << endl;
-		coutBoolVec(is_add_vars);
+		printBoolVec(is_add_vars);
 	}
 	
 	if (neigh_type <= 1) { // add add/remove points
@@ -716,7 +723,7 @@ void igbfs::simpleHillClimbing(int neigh_type, Point p)
 		neigh_center = p;
 		cout << "start point is given : \n";
 		vector<unsigned> vec = uintVecFromPoint(neigh_center);
-		coutUintVec(vec);
+		printUintVec(vec);
 	}
 	else {
 		// else use as the start point the set of all variables
@@ -923,7 +930,7 @@ void igbfs::onePlusOne(int fcalc_lim, double time_from_last_update, double time_
 			writeToGraphFile("--- interrupt (1+1)-EA due to limit");
 			stringstream sstream;
 			sstream << "\t" << global_record_point.weight() << " " << global_record_point.estimation << " " <<
-				global_record_point.estimation / cpu_num << " " << (unsigned)timeFromStart() << " " <<
+				global_record_point.estimation / cpu_num << " " << (unsigned)elapsedWallTime() << " " <<
 				total_func_calculations << " " << total_skipped_func_calculations;
 			writeToGraphFile(sstream.str());
 			break;
@@ -985,7 +992,7 @@ void igbfs::simpleHillClimbingAddRemovePartialRaplace(Point p)
 		neigh_center = p;
 		cout << "start point is given : \n";
 		vector<unsigned> vec = uintVecFromPoint(neigh_center);
-		coutUintVec(vec);
+		printUintVec(vec);
 	}
 	else {
 		// else use as the start point the set of all variables
@@ -1009,7 +1016,7 @@ void igbfs::simpleHillClimbingAddRemovePartialRaplace(Point p)
 		if (verbosity > 0) {
 			cout << "neighbors_points size : " << neighbors_points.size() << endl;
 			cout << "is_add_vars : " << endl;
-			coutBoolVec(is_add_vars);
+			printBoolVec(is_add_vars);
 		}
 		
 		bool is_local_record_updated = false;
@@ -1113,7 +1120,7 @@ void igbfs::simpleHillClimbingAddRemovePartialRaplace(Point p)
 			cout << "first " << REPLACE_VARS+1 << " neighbors : " << endl;
 			for (unsigned j = 0; j < REPLACE_VARS+1; j++) {
 				vector<unsigned> uvec = uintVecFromPoint(neighbors_points[j]);
-				coutUintVec(uvec);
+				printUintVec(uvec);
 			}
 		}
 		// then add all remaining points

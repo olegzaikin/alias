@@ -22,7 +22,7 @@
 
 const double DEFAULT_ALIAS_TIME_LIMIT = 86400;
 const double DEFAULT_CNF_TIME_LIMIT = 60;
-const unsigned MAX_SOLVING_VARS = 35;
+const unsigned MAX_SOLVING_VARS = 48;
 const unsigned DEFAULT_JUMP_LIM = 3;
 const unsigned MIN_VARS_JUMP = 100;
 const double MAX_OBJ_FUNC_VALUE = 1e+300;
@@ -36,58 +36,47 @@ class base_local_search
 {
 public:
 	base_local_search();
-
-	unsigned opt_alg;
-
-	int getCpuCores();
-	string getCmdOutput(const char* cmd);
-	double timeFromStart();
-	bool isTimeExceeded();
-
 	void parseParams(vector<string> str_argv);
 	void init();
-	void loadVars();
-	void loadBackdoor();
+
+protected:
+	int getCpuCores();
+	unsigned elapsedWallTime();
+	bool isTimeExceeded();
 	Point pointFromUintVec(vector<unsigned> var_vec);
 	vector<unsigned> uintVecFromPoint(Point p);
-	void coutUintVec(vector<unsigned> vec);
-	void coutBoolVec(vector<bool> vec);
+	void printUintVec(const vector<unsigned> vec);
+	void printBoolVec(const vector<bool> vec);
 	vector<Var> getAllCnfVars(const string filename);
 	vector<Var> readVarsFromPcs(string pcs_name);
 	bool isEstTooLong();
 	void writeToGraphFile(const string str);
 	void setGraphFileName();
-	bool solveInstance();
-	void reportResult();
+	void reportOptResult();
 	void calculateEstimation(Point &cur_point, bool use_memory = true);
 	bool isChecked(Point p);
 	void clearInterruptedChecked();
-	string getScriptCommand(const int mode, const Point cur_point);
-	bool isKnownBackdoor();
 	int getVarPos(const unsigned val);
 	void printGlobalRecordPoint();
 	string printUintVector(vector<unsigned>);
-	
 	int total_func_calculations;
 	int total_skipped_func_calculations;
-
-protected:
 	// Input variables:
+	unsigned opt_alg;
 	string cnf_name;
 	string solver_name;
 	string pcs_name;
 	int cpu_num;
 	double cnf_time_lim;
 	double alias_time_lim;
-	double wall_time_solving;
 	unsigned sample_size;
-	unsigned incr_variables;
+	unsigned incr_vars_num;
 	unsigned seed;
 	int verbosity;
 	// Internal variables:
 	fstream graph_file;
 	string graph_file_name;
-	vector<Var> vars;
+	vector<Var> vars; // all vars in the search space
 	bool are_vars_in_row;
 	unordered_map<string, double> checked_points;
 	unsigned skipped_points_count;
@@ -100,15 +89,18 @@ protected:
 	chrono::high_resolution_clock::time_point start_time;
 	bool is_solve;
 	string result_output_name;
-	string script_out_str;
 	string backdoor_file_name;
-	Point known_backdoor;
 	mt19937 rand_engine;
 	// iteretedHCVJ parameters
 	unsigned jump_lim;
 	unsigned jump_step;
 	bool is_jump_mode;
 	CNF orig_cnf;
+	Point known_backdoor;
+	void loadVars();
+	void loadBackdoor();
+	void solveInstance();
+	Point getStartPoint();
 };
 
 #endif

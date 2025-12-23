@@ -16,7 +16,7 @@
 void writeUsage();
 void printVersion();
 
-string version = "1.0.2";
+string version = "1.0.3";
 
 int main(int argc, char *argv[])
 {
@@ -37,10 +37,7 @@ int main(int argc, char *argv[])
 	igbfs igbfs_obj;
 	igbfs_obj.parseParams(str_argv);
 	igbfs_obj.init();
-	igbfs_obj.findBackdoor();
-	// Don't solve a SAT instance via the found backdoor for a while:
-	//igbfs_obj.solveInstance();
-	igbfs_obj.reportResult();
+	igbfs_obj.findBackdoorOrSolve();
 	
 	return 0;
 }
@@ -57,7 +54,7 @@ void writeUsage()
 	cout << "incr-sat-solver (default: cadical2) [OBLIGATORY] Name of an incremental SAT solver;";
 	cout << "\n";
 	cout << "CORE OPTIONS: \n";
-	cout << "-optalg     = <unsigned> (default: 1+1)     [OPTIONAL]   Optimization algorithm.\n";
+	cout << "-optalg     = <int> (default: 1+1)  [OPTIONAL]   Optimization algorithm.\n";
 	cout << "	0: random search in the whole space" << endl;
 	cout << "	1: random search reduce size by one" << endl;
 	cout << "	2: simple hill climbing (add/remove)" << endl;
@@ -68,12 +65,13 @@ void writeUsage()
 	cout << "	7: simple hill climbing (add/remove/partial-replace)" << endl;
 	cout << "	8: (1+1)-EA with simple hill climbing (add/remove/partial-replace)" << endl;
 	cout << "	9: simple hill climbing (add/remove/replace)" << endl;
-	cout << "-backdoor    = <string>                     [OPTIONAL]   Name of a file that contains a backdoor (numeration from 1) \n";
-	cout << "--solve                                     [OPTIONAL]   Enable solving of a given instance by a found (or a given) backdoor \n";
+	cout << "-backdoor    = <string>                  [OPTIONAL] Name of a file which contains a backdoor (numeration from 1) \n";
+	cout << "-sample      = <int>                     [OPTIONAL] Random sample size \n";
+	cout << "--solve                                  [OPTIONAL] Enable solving of a given instance by a found (or a given) backdoor \n";
 	cout << "MAIN OPTIONS: \n";
 	cout << "-cpunum      = <int> (default = all cores) CPU cores" << endl;
-	cout << "-cnftimelim  = <int> (default: 3600)        [OPTIONAL]   CPU wall time limit in seconds \n";
-	cout << "-seed        = <int> (default: 0)           [OPTIONAL]   Random seed \n";
-	cout << "-verb        = <int> [0..2] (default: 1)    [OPTIONAL]   Verbosity \n";
+	cout << "-cnftimelim  = <int> (default: 3600)     [OPTIONAL] CPU wall time limit in seconds \n";
+	cout << "-seed        = <int> (default: 0)        [OPTIONAL] Random seed \n";
+	cout << "-verb        = <int> [0..2] (default: 1) [OPTIONAL] Verbosity \n";
 	cout << "--help       Print help message. \n";
 }

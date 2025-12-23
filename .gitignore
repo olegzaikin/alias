@@ -6,3 +6,4 @@ alias_*
 /optimization/*.cnf
 /optimization/*.pcs
 /optimization/alias
+run.sh

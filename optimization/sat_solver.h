@@ -29,13 +29,12 @@ class SatSolver
 {
 public:
     SatSolver(const string solver_name, const CNF cnf, const unsigned cpu_num,
-          const unsigned sample_size, const unsigned incr_vars_num, const double cnf_time_lim) : 
+          const unsigned sample_size, const unsigned incr_vars_num) : 
         solver_name(solver_name),
         cnf(cnf),
         cpu_num(cpu_num),
         sample_size(sample_size),
-        incr_vars_num(incr_vars_num),
-        cnf_time_lim(cnf_time_lim)
+        incr_vars_num(incr_vars_num)
     {
         assert(solver_name != "");
         assert(cnf.var_num > 0 and cnf.clause_num > 0);
@@ -44,7 +43,8 @@ public:
         assert(incr_vars_num > 0);
         assert(cnf_time_lim > 0);
     }
-    double estimate(const vector<unsigned> point, mt19937 &rand_engine);
+    double estimate(const vector<unsigned> point, mt19937 &rand_engine, const double cnf_time_lim);
+    result solve(const string cnf_name, const double cnf_time_lim);
 private:
     string solver_name;
     CNF cnf;

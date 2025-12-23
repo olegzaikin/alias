@@ -34,10 +34,11 @@ public:
 	void onePlusOne(int fcalc_lim = -1, double time_from_last_update = -1, double time_lim = -1);
 	void onePlusOneNoMemory();
 	void onePlusOneSimpleHillClimbing();
-	int findBackdoor();
+	void findBackdoorOrSolve();
 	Point generateRandPoint(const unsigned point_var_count);
 protected:
 	unsigned get_diff_var(Point p1, Point p2);
+	int findBackdoor();
 };
 
 #endif

@@ -1,5 +1,6 @@
 #include "base_ls.h"
 #include "sat_solver.h"
+#include "utils.h"
 #include <sstream>
 #include <omp.h>
 
@@ -13,26 +14,22 @@ base_local_search::base_local_search() :
 	cnf_time_lim(DEFAULT_CNF_TIME_LIMIT),
 	skipped_points_count(0),
 	interrupted_points_count(0),
-	wall_time_solving(0),
 	is_jump_mode(true),
 	vars_decr_times(0),
 	is_solve(false),
 	jump_lim(DEFAULT_JUMP_LIM),
 	result_output_name(""),
-	script_out_str(""),
-	backdoor_file_name(""),
 	opt_alg(5), // 1+1
 	total_func_calculations(0),
 	total_skipped_func_calculations(0),
 	sample_size(100),
-	incr_variables(8),
+	incr_vars_num(8),
 	seed(0),
 	verbosity(0),
 	are_vars_in_row(false)
 {
 	start_time = chrono::high_resolution_clock::now(); 
 	// Initialize a random generator by the given seed:
-	known_backdoor.value.resize(0);
 	global_record_point.value.resize(0);
 	local_record_point.estimation = HUGE_VAL;
 	global_record_point.estimation = HUGE_VAL;
@@ -55,7 +52,7 @@ void base_local_search::loadVars()
 		exit(-1);
 	}
 
-	cout << "vars.size : " << vars.size() << endl;
+	cout << "decomposition set size : " << vars.size() << endl;
 	for (auto v : vars)
 		cout << v.value << " ";
 	cout << endl;
@@ -67,9 +64,35 @@ void base_local_search::loadVars()
 			break;
 		}
 	}
-	
-	cout << "are_vars_in_row " << are_vars_in_row << endl;
-	cout << "search space variables number " << vars.size() << endl;
+}
+
+// Load a backdoor from a file.
+// It is written in one line as integers divided by spaces: 
+void base_local_search::loadBackdoor()
+{
+	if (backdoor_file_name != "") {
+		if (verbosity > 1)
+			cout << "loading a backdoor from file " << backdoor_file_name << endl;
+		ifstream ifile(backdoor_file_name);
+		stringstream sstream;
+		string str;
+		getline(ifile, str);
+		sstream << str;
+		vector<unsigned> var_vec;
+		int val;
+		while (sstream >> val)
+			var_vec.push_back(val);
+		ifile.close();
+		known_backdoor = pointFromUintVec(var_vec);
+		cout << "known backdoor : " << endl;
+		printUintVec(var_vec);
+		/*
+		// calculate estimation for the given backdoor
+		calculateEstimation(known_backdoor);
+		global_record_point = known_backdoor;
+		printGlobalRecordPoint();
+		*/
+	}
 }
 
 int base_local_search::getVarPos(const unsigned val)
@@ -115,43 +138,18 @@ vector<unsigned> base_local_search::uintVecFromPoint(Point p)
 	return vec;
 }
 
-void base_local_search::coutUintVec(vector<unsigned> vec)
+void base_local_search::printUintVec(const vector<unsigned> vec)
 {
 	for (auto x : vec)
 		cout << x << " ";
 	cout << endl;
 }
 
-void base_local_search::coutBoolVec(vector<bool> vec)
+void base_local_search::printBoolVec(const vector<bool> vec)
 {
 	for (auto x : vec)
 		cout << x << " ";
 	cout << endl;
-}
-
-void base_local_search::loadBackdoor()
-{
-	if (backdoor_file_name != "") {
-		if (verbosity > 1)
-			cout << "loadBackdoor()" << endl;
-		ifstream ifile(backdoor_file_name);
-		stringstream sstream;
-		string str;
-		getline(ifile, str);
-		sstream << str;
-		vector<unsigned> var_vec;
-		int val;
-		while (sstream >> val)
-			var_vec.push_back(val);
-		ifile.close();
-		cout << "known backdoor : " << endl;
-		coutUintVec(var_vec);
-		known_backdoor = pointFromUintVec(var_vec);
-		// calculate estimation for the given backdoor
-		calculateEstimation(known_backdoor);
-		global_record_point = known_backdoor;
-		printGlobalRecordPoint();
-	}
 }
 
 // Parse a dimacs CNF formula from a given file and
@@ -284,28 +282,7 @@ string base_local_search::printUintVector(vector<unsigned> vec)
 	return sstream.str();
 }
 
-string base_local_search::getCmdOutput(const char* cmd) {
-	std::string result = "";
-#ifndef _WIN32
-	char buffer[128];
-	FILE* pipe = popen(cmd, "r");
-	if (!pipe) throw std::runtime_error("popen() failed!");
-	try {
-		while (!feof(pipe)) {
-			if (fgets(buffer, 128, pipe) != NULL)
-				result += buffer;
-		}
-	}
-	catch (...) {
-		pclose(pipe);
-		throw;
-	}
-	pclose(pipe);
-#endif
-	return result;
-}
-
-double base_local_search::timeFromStart()
+unsigned base_local_search::elapsedWallTime()
 {
 	chrono::high_resolution_clock::time_point cur_time = chrono::high_resolution_clock::now();
 	chrono::duration<double> time_span = chrono::duration_cast<chrono::duration<double>>(cur_time - start_time);
@@ -325,7 +302,7 @@ bool base_local_search::isTimeExceeded()
 
 bool base_local_search::isEstTooLong() // for simple instances
 {
-	if ((global_record_point.estimation / cpu_num / 2) <= timeFromStart()) {
+	if ((global_record_point.estimation / cpu_num / 2) <= elapsedWallTime()) {
 		// additionally divide by 2 for possible satisfiable instances
 		cout << "*** estimation / " << cpu_num << " and /2 is less than elapsed time" << endl;
 		return true;
@@ -333,19 +310,16 @@ bool base_local_search::isEstTooLong() // for simple instances
 	return false;
 }
 
-void base_local_search::reportResult()
+void base_local_search::reportOptResult()
 {
 	stringstream sstream;
 	sstream << "Function calculations : " << total_func_calculations << endl;
 	sstream << "skipped Function calculations : " << total_skipped_func_calculations << endl;
-	sstream << "Wall time : " << timeFromStart() << endl;
+	sstream << "Elapsed wall time : " << elapsedWallTime() << endl;
 	sstream << "Backdoor (numeration from 1):" << endl;
 	sstream << global_record_point.getStr(vars);
 	sstream << "Estimation for 1 CPU core : " << global_record_point.estimation << " seconds" << endl;
 	sstream << "Estimation for " << cpu_num << " CPU cores : " << global_record_point.estimation / cpu_num << " seconds" << endl;
-	if (is_solve) {
-		sstream << script_out_str << endl;
-	}
 	cout << sstream.str();
 	
 	if (result_output_name != "") {
@@ -377,14 +351,16 @@ void base_local_search::parseParams(vector<string> str_argv)
 			solver_name = res_str;
 		else if (strPrefix(par_str, "-optalg=", res_str))
 			istringstream(res_str) >> opt_alg;
+		else if (strPrefix(par_str, "-backdoor=", res_str))
+			istringstream(res_str) >> backdoor_file_name;
+		else if (strPrefix(par_str, "-sample=", res_str))
+			istringstream(res_str) >> sample_size;
 		else if (strPrefix(par_str, "-cpunum=", res_str))
 			istringstream(res_str) >> cpu_num;
 		else if (strPrefix(par_str, "-cnftimelim=", res_str))
 			istringstream(res_str) >> cnf_time_lim;
 		else if (strPrefix(par_str, "-verb=", res_str))
 			istringstream(res_str) >> verbosity;
-		else if (strPrefix(par_str, "-backdoor=", res_str))
-			istringstream(res_str) >> backdoor_file_name;
 		else if (strPrefix(par_str, "-seed=", res_str))
 			istringstream(res_str) >> seed;
 		else if (par_str == "--solve")
@@ -394,14 +370,19 @@ void base_local_search::parseParams(vector<string> str_argv)
 	if (cpu_num == 0) cpu_num = getCpuCores();
 	
 	cout << "cnf name " << cnf_name << endl;
-	cout << "start decomposition set name " << pcs_name << endl;
+	cout << "decomposition set name " << pcs_name << endl;
 	cout << "solver name " << solver_name << endl;
-	cout << "opt_alg " << opt_alg << endl;
-	cout << "CPU num " << cpu_num << endl;
-	cout << "CNF time lim " << cnf_time_lim << endl;
 	cout << "is solve " << is_solve << endl;
+	if (is_solve) {
+		cout << "backdoor_file_name " << backdoor_file_name << endl;
+	}
+	else {
+		cout << "opt_alg " << opt_alg << endl;
+		cout << "sample_size " << sample_size << endl;
+	}
+	cout << "CPU num " << cpu_num << endl;
+	cout << "CNF time limit " << cnf_time_lim << endl;
 	cout << "verbosity " << verbosity << endl;
-	cout << "backdoor name " << backdoor_file_name << endl;
 	cout << "seed " << seed << endl;
 
 	string base_cnf_name = cnf_name;
@@ -456,8 +437,8 @@ void base_local_search::calculateEstimation(Point &cur_point, bool use_memory)
 	}
 	
 	vector<unsigned> point_uint = uintVecFromPoint(cur_point);
-	SatSolver solver(solver_name, orig_cnf, cpu_num, sample_size, incr_variables, cnf_time_lim);
-	cur_point.estimation = solver.estimate(point_uint, rand_engine);
+	SatSolver solver(solver_name, orig_cnf, cpu_num, sample_size, incr_vars_num);
+	cur_point.estimation = solver.estimate(point_uint, rand_engine, cnf_time_lim);
 
 	// Save the point if memory is being used:
 	if (use_memory) {
@@ -490,9 +471,119 @@ void base_local_search::printGlobalRecordPoint()
 	cout << global_record_point.getStr(vars);
 }
 
-bool base_local_search::isKnownBackdoor()
+void print_solve_stats(const unsigned processed_tasks,
+	                   const unsigned total_tasks,
+					   const unsigned unsat_num,
+	                   const unsigned sat_num,
+					   const unsigned interr_num) {
+	cout << "processed " << processed_tasks << " out of " << total_tasks << "  ";
+	cout << "unsat : " << unsat_num << " ";
+	cout << "sat : " << sat_num << " ";
+	cout << "interr : " << interr_num;
+	cout << endl;
+}
+
+Point base_local_search::getStartPoint() {
+	Point start_point;
+	start_point.value.resize(vars.size());
+	for (auto x : start_point.value)
+		x = true;
+	return start_point;
+}
+
+void base_local_search::solveInstance()
 {
-	if (verbosity > 1)
-		cout << "isKnownBackdoor()" << endl;
-	return (known_backdoor.value.size() > 0) ? true : false;
+	assert(is_solve);
+	cout << "solve the instance using a decomposition set" << endl;
+
+	stringstream sstream;
+	sstream << "--- start solving, elapsed time " << elapsedWallTime();
+	writeToGraphFile(sstream.str());
+	sstream.str(""); sstream.clear();
+
+	double remaining_wall_time = alias_time_lim - elapsedWallTime();
+	cout << "remaining_wall_time : " << remaining_wall_time << endl;
+
+	assert(cpu_num > 0);
+
+	// assert(vars.size() <= MAX_SOLVING_VARS);
+
+	assert(not known_backdoor.value.empty());
+	assert(known_backdoor.weight() > 0 and known_backdoor.weight() <= vars.size());
+	assert(known_backdoor.value.size() == vars.size());
+	vector<unsigned> point_uint = uintVecFromPoint(known_backdoor);
+	unsigned vars_to_vary = point_uint.size() - incr_vars_num;
+
+	vector<vector<bool>> vary_vars_truth_table = utils::generateTruthTable(vars_to_vary);
+	vector<vector<bool>> incr_vars_truth_table = utils::generateTruthTable(incr_vars_num);
+
+	SatSolver solver(solver_name, orig_cnf, cpu_num, sample_size, incr_vars_num);
+	unsigned unsat_num = 0;
+	unsigned sat_num = 0;
+	unsigned interr_num = 0;
+	unsigned processed = 0;
+	string system_str;
+
+	#pragma omp parallel for schedule(dynamic, 1)
+	for (unsigned i=0; i<vary_vars_truth_table.size(); i++) {
+		assert(vary_vars_truth_table[i].size() == vars_to_vary);
+		remaining_wall_time = alias_time_lim - elapsedWallTime();
+		// If SAT found or time limit is reached, skip all unsolved instances:
+		if ( (sat_num > 0) or (isTimeExceeded()) ) {
+			continue;
+		}
+		// For each set of random variables' values, make a CNF:
+        stringstream sstream;
+        sstream << "tmp_" << i << ".cnf";
+        string tmp_cnf_name = sstream.str();
+        ofstream tmp_cnf(tmp_cnf_name, ios_base::out);
+        // Print header of the incremental DIMACS:
+        tmp_cnf << "p inccnf " << endl;
+        // Add main clauses: 
+        for (auto &clause : orig_cnf.clauses) tmp_cnf << clause << endl;
+        // Add unit clauses for varied variables:
+        for (unsigned j=0; j<vary_vars_truth_table[i].size(); j++) {
+            if (not vary_vars_truth_table[i][j]) tmp_cnf << "-";
+            tmp_cnf << point_uint[j] << " 0" << endl;
+        }
+        // Add cubes for incremental processing of the remaining variables:
+        for (auto &bool_row : incr_vars_truth_table) {
+            assert(bool_row.size() == incr_vars_num);
+            tmp_cnf << "a ";
+            for (unsigned j=0; j<incr_vars_num; j++) {
+                if (not bool_row[j]) tmp_cnf << "-";
+                tmp_cnf << point_uint[vars_to_vary + j] << " ";
+            }
+            tmp_cnf << "0" << endl;
+        }
+        tmp_cnf.close();
+        // Run an incremental SAT solver on the CNF:
+        result res = solver.solve(tmp_cnf_name, remaining_wall_time);
+		if (res.status == SAT) {
+			sat_num++;
+			// Make a copy of a satisfiable CNF: 
+			stringstream sstream_sat_cnf_name;
+			sstream_sat_cnf_name << "!sat_cnf_i=" << i << ".cnf";
+			string sat_cnf_name = sstream_sat_cnf_name.str();
+			system_str = "cp " + tmp_cnf_name + " " + sat_cnf_name;
+			utils::exec(system_str);
+			cout << "SAT found on i " << i << endl;
+			cout << "SAT CNF written to " << sat_cnf_name << endl;
+		}
+		else {
+			assert(res.status == UNSAT or res.status == INTERR);
+			if (res.status == UNSAT) unsat_num++;
+			if (res.status == INTERR) interr_num++;
+		}
+		system_str = "rm -f " + tmp_cnf_name;
+		utils::exec(system_str);
+		processed++;
+		if (processed > 1 and processed % 100 == 0) {
+			print_solve_stats(processed, vary_vars_truth_table.size(), unsat_num, sat_num, interr_num);
+		}
+	}
+
+	print_solve_stats(processed, vary_vars_truth_table.size(), unsat_num, sat_num, interr_num);
+	cout << "Finished" << endl;
+	cout << "Elapsed " << elapsedWallTime() << " sec" << endl;
 }
