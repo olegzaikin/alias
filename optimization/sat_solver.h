@@ -41,7 +41,6 @@ public:
         assert(cpu_num >= 1);
         assert(sample_size > 0);
         assert(incr_vars_num > 0);
-        assert(cnf_time_lim > 0);
     }
     double estimate(const vector<unsigned> point, mt19937 &rand_engine, const double cnf_time_lim);
     result solve(const string cnf_name, const double cnf_time_lim);
@@ -51,7 +50,6 @@ private:
     unsigned cpu_num;
     unsigned sample_size;
     unsigned incr_vars_num;
-    double cnf_time_lim;
 };
 
 #endif
