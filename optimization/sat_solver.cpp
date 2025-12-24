@@ -77,7 +77,8 @@ double SatSolver::estimate(const vector<unsigned> point_uint, mt19937 &rand_engi
     vector<double> runtimes(sample_size);
     #pragma omp parallel for schedule(dynamic, 1)
     for (unsigned i=0; i<sample_size; i++) {
-        //cout << "i " << i << endl;
+        // If solver was interrupted at least once, skip the remaining sample: 
+        if (is_interrupted) continue;
         // For each set of random variables' values, make a CNF:
         stringstream sstream;
         sstream << "tmp_" << i << ".cnf";

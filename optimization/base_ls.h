@@ -20,8 +20,8 @@
 #include "point.h"
 #include "cnf.h"
 
-const double DEFAULT_ALIAS_TIME_LIMIT = 86400;
-const double DEFAULT_CNF_TIME_LIMIT = 60;
+const double DEFAULT_WALL_TIME_LIMIT = 86400;
+const double DEFAULT_CNF_TIME_LIMIT = 600;
 const unsigned MAX_SOLVING_VARS = 48;
 const unsigned DEFAULT_JUMP_LIM = 3;
 const unsigned MIN_VARS_JUMP = 100;
@@ -61,6 +61,7 @@ protected:
 	string printUintVector(vector<unsigned>);
 	int total_func_calculations;
 	int total_skipped_func_calculations;
+	int total_interr_func_calculations;
 	// Input variables:
 	unsigned opt_alg;
 	string cnf_name;
@@ -68,7 +69,7 @@ protected:
 	string pcs_name;
 	int cpu_num;
 	double cnf_time_lim;
-	double alias_time_lim;
+	double wall_time_lim;
 	unsigned sample_size;
 	unsigned incr_vars_num;
 	unsigned seed;

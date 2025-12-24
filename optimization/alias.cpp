@@ -6,7 +6,7 @@
 // subset.
 // 
 // Example:
-//    ./alias ./problem.cnf ./dset
+//    ./alias ./problem.cnf ./dset.pcs
 //=============================================================================
 
 #include <iostream>
@@ -16,7 +16,7 @@
 void writeUsage();
 void printVersion();
 
-string version = "1.0.4";
+string version = "1.0.5";
 
 int main(int argc, char *argv[])
 {
@@ -69,8 +69,9 @@ void writeUsage()
 	cout << "-sample      = <int>                     [OPTIONAL] Random sample size \n";
 	cout << "--solve                                  [OPTIONAL] Enable solving of a given instance by a found (or a given) backdoor \n";
 	cout << "MAIN OPTIONS: \n";
+	cout << "-walltimelim = <int> (default: 86400)    [OPTIONAL] CPU wall time limit in seconds \n";
+	cout << "-cnftimelim  = <int> (default: 3600)     [OPTIONAL] SAT solver time limit on a CNF in seconds \n";
 	cout << "-cpunum      = <int> (default = all cores) CPU cores" << endl;
-	cout << "-cnftimelim  = <int> (default: 3600)     [OPTIONAL] CPU wall time limit in seconds \n";
 	cout << "-seed        = <int> (default: 0)        [OPTIONAL] Random seed \n";
 	cout << "-verb        = <int> [0..2] (default: 1) [OPTIONAL] Verbosity \n";
 	cout << "--help       Print help message. \n";

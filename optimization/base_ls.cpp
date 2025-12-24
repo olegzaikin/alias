@@ -10,7 +10,7 @@ base_local_search::base_local_search() :
 	solver_name(""),
 	pcs_name(""),
 	cpu_num(0),
-	alias_time_lim(DEFAULT_ALIAS_TIME_LIMIT),
+	wall_time_lim(DEFAULT_WALL_TIME_LIMIT),
 	cnf_time_lim(DEFAULT_CNF_TIME_LIMIT),
 	skipped_points_count(0),
 	interrupted_points_count(0),
@@ -22,6 +22,7 @@ base_local_search::base_local_search() :
 	opt_alg(5), // 1+1
 	total_func_calculations(0),
 	total_skipped_func_calculations(0),
+	total_interr_func_calculations(0),
 	sample_size(100),
 	incr_vars_num(8),
 	seed(0),
@@ -293,7 +294,7 @@ bool base_local_search::isTimeExceeded()
 {
 	chrono::high_resolution_clock::time_point cur_time = chrono::high_resolution_clock::now();
 	chrono::duration<double> time_span = chrono::duration_cast<chrono::duration<double>>(cur_time - start_time);
-	if (time_span.count() >= alias_time_lim) {
+	if (time_span.count() >= wall_time_lim) {
 		cout << "*** time is up" << endl;
 		return true;
 	}
@@ -314,7 +315,8 @@ void base_local_search::reportOptResult()
 {
 	stringstream sstream;
 	sstream << "Function calculations : " << total_func_calculations << endl;
-	sstream << "skipped Function calculations : " << total_skipped_func_calculations << endl;
+	sstream << "Interrupted function calculations : " << total_interr_func_calculations << endl;
+	sstream << "Skipped function calculations : " << total_skipped_func_calculations << endl;
 	sstream << "Elapsed wall time : " << elapsedWallTime() << endl;
 	sstream << "Backdoor (numeration from 1):" << endl;
 	sstream << global_record_point.getStr(vars);
@@ -355,10 +357,12 @@ void base_local_search::parseParams(vector<string> str_argv)
 			istringstream(res_str) >> backdoor_file_name;
 		else if (strPrefix(par_str, "-sample=", res_str))
 			istringstream(res_str) >> sample_size;
-		else if (strPrefix(par_str, "-cpunum=", res_str))
-			istringstream(res_str) >> cpu_num;
+		else if (strPrefix(par_str, "-walltimelim=", res_str))
+			istringstream(res_str) >> wall_time_lim;
 		else if (strPrefix(par_str, "-cnftimelim=", res_str))
 			istringstream(res_str) >> cnf_time_lim;
+		else if (strPrefix(par_str, "-cpunum=", res_str))
+			istringstream(res_str) >> cpu_num;
 		else if (strPrefix(par_str, "-verb=", res_str))
 			istringstream(res_str) >> verbosity;
 		else if (strPrefix(par_str, "-seed=", res_str))
@@ -380,6 +384,7 @@ void base_local_search::parseParams(vector<string> str_argv)
 		cout << "opt_alg " << opt_alg << endl;
 		cout << "sample_size " << sample_size << endl;
 	}
+	cout << "wall_time_lim " << wall_time_lim << endl;
 	cout << "CPU num " << cpu_num << endl;
 	cout << "CNF time limit " << cnf_time_lim << endl;
 	cout << "verbosity " << verbosity << endl;
@@ -439,6 +444,7 @@ void base_local_search::calculateEstimation(Point &cur_point, bool use_memory)
 	vector<unsigned> point_uint = uintVecFromPoint(cur_point);
 	SatSolver solver(solver_name, orig_cnf, cpu_num, sample_size, incr_vars_num);
 	cur_point.estimation = solver.estimate(point_uint, rand_engine, cnf_time_lim);
+	if (cur_point.estimation == -1) total_interr_func_calculations++;
 
 	// Save the point if memory is being used:
 	if (use_memory) {
@@ -501,7 +507,7 @@ void base_local_search::solveInstance()
 	writeToGraphFile(sstream.str());
 	sstream.str(""); sstream.clear();
 
-	double remaining_wall_time = alias_time_lim - elapsedWallTime();
+	double remaining_wall_time = wall_time_lim - elapsedWallTime();
 	cout << "remaining_wall_time : " << remaining_wall_time << endl;
 
 	assert(cpu_num > 0);
@@ -527,7 +533,7 @@ void base_local_search::solveInstance()
 	#pragma omp parallel for schedule(dynamic, 1)
 	for (unsigned i=0; i<vary_vars_truth_table.size(); i++) {
 		assert(vary_vars_truth_table[i].size() == vars_to_vary);
-		remaining_wall_time = alias_time_lim - elapsedWallTime();
+		remaining_wall_time = wall_time_lim - elapsedWallTime();
 		// If SAT found or time limit is reached, skip all unsolved instances:
 		if ( (sat_num > 0) or (isTimeExceeded()) ) {
 			continue;
