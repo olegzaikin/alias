@@ -169,8 +169,8 @@ void igbfs::updateLocalRecord(Point cur_point, int neighbor_index, int neighbor_
 		global_record_point = local_record_point;
 		cout << "elapsed wall time : " << elapsedWallTime() << " sec | " << 
 			    "record backdoor with " << global_record_point.weight() << " vars | " <<
-			    " estimation " << global_record_point.estimation / cpu_num << " sec on " << 
-			    cpu_num << " CPU cores" << endl << flush;
+			    "estimation " << global_record_point.estimation / cpu_num << " sec on " << 
+			    cpu_num << " CPU cores | " << global_record_point.getStr(vars) << flush;
 		if (verbosity > 0)
 			printGlobalRecordPoint();
 		if (is_jump_mode) {
@@ -254,9 +254,7 @@ int igbfs::findBackdoor()
 {
 	assert(not is_solve);
 
-	// if the decomposition set is unknown and it is required to find it
 	stringstream sstream;
-	cpu_num = getCpuCores();
 	sstream << "vars est-1-core est-" << cpu_num << "-cores elapsed-sec elapsed-fcalc skipped_fcalc neigh_index/neigh_size";
 	writeToGraphFile(sstream.str());
 	sstream.str(""); sstream.clear();

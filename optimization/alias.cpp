@@ -16,7 +16,7 @@
 void writeUsage();
 void printVersion();
 
-string version = "1.0.5";
+string version = "1.0.6";
 
 int main(int argc, char *argv[])
 {
