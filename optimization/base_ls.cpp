@@ -24,7 +24,7 @@ base_local_search::base_local_search() :
 	total_skipped_func_calculations(0),
 	total_interr_func_calculations(0),
 	sample_size(100),
-	incr_vars_num(8),
+	incr_vars_num(7),
 	seed(0),
 	verbosity(0),
 	are_vars_in_row(false)
