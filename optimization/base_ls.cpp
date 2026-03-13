@@ -85,6 +85,7 @@ void base_local_search::loadBackdoor()
 			var_vec.push_back(val);
 		ifile.close();
 		known_backdoor = pointFromUintVec(var_vec);
+		cout << "known backdoor size : " << var_vec.size() << endl;
 		cout << "known backdoor : " << endl;
 		printUintVec(var_vec);
 		/*
@@ -318,7 +319,8 @@ void base_local_search::reportOptResult()
 	sstream << "Interrupted function calculations : " << total_interr_func_calculations << endl;
 	sstream << "Skipped function calculations : " << total_skipped_func_calculations << endl;
 	sstream << "Elapsed wall time : " << elapsedWallTime() << endl;
-	sstream << "Backdoor (numeration from 1):" << endl;
+	sstream << "Backdoor size : " << global_record_point.weight() << endl;
+	sstream << "Backdoor (numeration from 1) :" << endl;
 	sstream << global_record_point.getStr(vars);
 	sstream << "Estimation for 1 CPU core : " << global_record_point.estimation << " seconds" << endl;
 	sstream << "Estimation for " << cpu_num << " CPU cores : " << global_record_point.estimation / cpu_num << " seconds" << endl;
@@ -588,6 +590,10 @@ void base_local_search::solveInstance()
 			print_solve_stats(processed, vary_vars_truth_table.size(), unsat_num, sat_num, interr_num);
 		}
 	}
+
+	// Delete remaining files with tmp CNFs:
+	system_str = "rm -f tmp_*.cnf";
+	utils::exec(system_str);
 
 	print_solve_stats(processed, vary_vars_truth_table.size(), unsat_num, sat_num, interr_num);
 	cout << "Finished" << endl;
