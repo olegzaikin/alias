@@ -38,10 +38,7 @@ result readSolverResult(const string res_str) {
 result SatSolver::solve(const string cnf_name, const double cnf_time_lim) {
     assert(solver_name != "");
     assert(cnf_name != "");
-    stringstream sstream;
-    sstream << solver_name << " -t " << cnf_time_lim << " " << cnf_name;
-    string system_str = sstream.str();
-    //cout << system_str << endl;
+    string system_str = solver_name + " -t " + to_string((unsigned long long)cnf_time_lim) + " " + cnf_name;
     string res_str = utils::exec(system_str);
     result res = readSolverResult(res_str);
     // Exclude zero-runtime:
